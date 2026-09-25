@@ -43,7 +43,7 @@ export type WashService = POSServiceItem;
 export type VehicleType = POSVehicleType;
 export type AddOn = POSServiceItem;
 
-export type PaymentMethod = 'CASH' | 'CARD' | 'OTHER';
+export type PaymentMethod = 'CASH' | 'DEBIT_CARD' | 'CREDIT_CARD' | 'CARD' | 'OTHER';
 
 export type TransactionStatus = 'completed' | 'voided';
 
@@ -74,6 +74,7 @@ export interface Transaction {
   taxAmount: number;
   total: number;
   paymentMethod: PaymentMethod;
+  cardRef?: string; // Optional masked card ref provided by test-payment system (e.g. "**** 1234")
   cashTendered?: number;
   changeDue?: number;
   voidedAt?: string;

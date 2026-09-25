@@ -1,7 +1,7 @@
 import React from 'react';
 import { Printer, PlusCircle, CheckCircle, Car, Truck } from 'lucide-react';
 import { Transaction, BusinessInfo } from '../types/pos';
-import { formatCurrency, DEFAULT_BUSINESS_INFO } from '../data/constants';
+import { formatCurrency, DEFAULT_BUSINESS_INFO, formatPaymentMethodName } from '../data/constants';
 
 interface ReceiptModalProps {
   transaction: Transaction | null;
@@ -118,12 +118,20 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               </div>
               <div className="flex justify-between">
                 <span>Payment:</span>
-                <span className="font-bold text-slate-900">{transaction.paymentMethod}</span>
+                <span className="font-bold text-slate-900">
+                  {formatPaymentMethodName(transaction.paymentMethod)}
+                </span>
               </div>
+              {transaction.cardRef && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Card:</span>
+                  <span className="font-mono">{transaction.cardRef}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Status:</span>
                 <span className={`font-bold ${isVoided ? 'text-red-700' : 'text-slate-900'}`}>
-                  {isVoided ? 'VOIDED' : 'COMPLETED'}
+                  {isVoided ? 'VOIDED' : 'PAID'}
                 </span>
               </div>
             </div>

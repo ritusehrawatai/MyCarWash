@@ -1,4 +1,4 @@
-import { POSServiceItem, POSVehicleType, BusinessInfo, POSSettings } from '../types/pos';
+import { POSServiceItem, POSVehicleType, BusinessInfo, POSSettings, PaymentMethod } from '../types/pos';
 
 export const BUSINESS_NAME = 'My Car Wash';
 export const DEFAULT_TAX_RATE = 0.0825; // 8.25%
@@ -119,4 +119,21 @@ export function generateReceiptNumber(): string {
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   return `CW-${dateStr}-${randomSuffix}`;
+}
+
+export function formatPaymentMethodName(method: PaymentMethod | string): string {
+  switch (method) {
+    case 'CASH':
+      return 'Cash';
+    case 'DEBIT_CARD':
+      return 'Debit Card';
+    case 'CREDIT_CARD':
+      return 'Credit Card';
+    case 'CARD':
+      return 'Card';
+    case 'OTHER':
+      return 'Other';
+    default:
+      return method;
+  }
 }

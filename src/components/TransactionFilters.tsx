@@ -52,7 +52,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             <button
               type="button"
               onClick={() => onSearchChange('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-slate-900 rounded-md"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-slate-900 rounded-md cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -63,7 +63,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           <button
             type="button"
             onClick={onResetFilters}
-            className="px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+            className="px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
             <span>Reset Filters ({activeFilterCount})</span>
@@ -93,7 +93,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
                 key={opt.id}
                 type="button"
                 onClick={() => onDateFilterChange(opt.id)}
-                className={`flex-1 min-w-[50px] py-1.5 px-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap text-center ${
+                className={`flex-1 min-w-[50px] py-1.5 px-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap text-center cursor-pointer ${
                   dateFilter === opt.id
                     ? 'bg-white text-slate-900 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -128,7 +128,8 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               [
                 { id: 'ALL', label: 'All' },
                 { id: 'CASH', label: 'Cash' },
-                { id: 'CARD', label: 'Card' },
+                { id: 'DEBIT_CARD', label: 'Debit' },
+                { id: 'CREDIT_CARD', label: 'Credit' },
                 { id: 'OTHER', label: 'Other' },
               ] as const
             ).map((opt) => (
@@ -136,7 +137,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
                 key={opt.id}
                 type="button"
                 onClick={() => onPaymentFilterChange(opt.id)}
-                className={`flex-1 min-w-[50px] py-1.5 px-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap text-center ${
+                className={`flex-1 min-w-[44px] py-1.5 px-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap text-center cursor-pointer ${
                   paymentFilter === opt.id
                     ? 'bg-white text-slate-900 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -166,7 +167,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
                 key={opt.id}
                 type="button"
                 onClick={() => onStatusFilterChange(opt.id)}
-                className={`flex-1 min-w-[50px] py-1.5 px-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap text-center ${
+                className={`flex-1 min-w-[50px] py-1.5 px-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap text-center cursor-pointer ${
                   statusFilter === opt.id
                     ? 'bg-white text-slate-900 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'

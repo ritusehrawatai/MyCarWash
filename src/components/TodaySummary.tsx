@@ -33,8 +33,14 @@ export const TodaySummary: React.FC<TodaySummaryProps> = ({ transactions }) => {
     .filter((t) => t.paymentMethod === 'CASH')
     .reduce((sum, t) => sum + t.total, 0);
 
+  // Combine Debit Card, Credit Card, and legacy CARD sales
   const cardSales = activeToday
-    .filter((t) => t.paymentMethod === 'CARD')
+    .filter(
+      (t) =>
+        t.paymentMethod === 'DEBIT_CARD' ||
+        t.paymentMethod === 'CREDIT_CARD' ||
+        t.paymentMethod === 'CARD'
+    )
     .reduce((sum, t) => sum + t.total, 0);
 
   const otherSales = activeToday
@@ -118,7 +124,7 @@ export const TodaySummary: React.FC<TodaySummaryProps> = ({ transactions }) => {
           <div className="mt-1.5 text-xl sm:text-2xl font-extrabold text-indigo-700 font-mono-numbers">
             {formatCurrency(cardSales)}
           </div>
-          <p className="text-[11px] text-indigo-600 mt-0.5">Debit / Credit terminal</p>
+          <p className="text-[11px] text-indigo-600 mt-0.5">Debit & Credit volume</p>
         </div>
 
         {/* Metric 5: Other Payments */}

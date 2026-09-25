@@ -89,8 +89,15 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
       }
 
       // 2. Payment Method Filter
-      if (paymentFilter !== 'ALL' && tx.paymentMethod !== paymentFilter) {
-        return false;
+      if (paymentFilter !== 'ALL') {
+        if (paymentFilter === 'DEBIT_CARD') {
+          if (tx.paymentMethod !== 'DEBIT_CARD') return false;
+        } else if (paymentFilter === 'CREDIT_CARD') {
+          // Allow CREDIT_CARD or legacy CARD records
+          if (tx.paymentMethod !== 'CREDIT_CARD' && tx.paymentMethod !== 'CARD') return false;
+        } else if (tx.paymentMethod !== paymentFilter) {
+          return false;
+        }
       }
 
       // 3. Status Filter
@@ -108,7 +115,12 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         const vehicleMatch = tx.vehicleType.name.toLowerCase().includes(query);
         const addOnsMatch = tx.addOns.some((a) => a.name.toLowerCase().includes(query));
 
-        if (!receiptMatch && !serviceMatch && !paymentMatch && !vehicleMatch && !addOnsMatch) {
+        // Friendly payment terms match
+        const debitMatch = query.includes('debit') && tx.paymentMethod === 'DEBIT_CARD';
+        const creditMatch = query.includes('credit') && (tx.paymentMethod === 'CREDIT_CARD' || tx.paymentMethod === 'CARD');
+        const cardMatch = query.includes('card') && (tx.paymentMethod === 'DEBIT_CARD' || tx.paymentMethod === 'CREDIT_CARD' || tx.paymentMethod === 'CARD');
+
+        if (!receiptMatch && !serviceMatch && !paymentMatch && !vehicleMatch && !addOnsMatch && !debitMatch && !creditMatch && !cardMatch) {
           return false;
         }
       }

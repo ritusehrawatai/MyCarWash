@@ -252,7 +252,7 @@ export default function App() {
   };
 
   // Complete Sale from POS
-  const handleCompleteSale = (cashTendered?: number, changeDue?: number) => {
+  const handleCompleteSale = (cashTendered?: number, changeDue?: number, cardRef?: string) => {
     if (!paymentMethod) return;
 
     const addOnsTotal = selectedAddOnObjects.reduce((sum, item) => sum + item.price, 0);
@@ -261,6 +261,7 @@ export default function App() {
     const total = subtotal + taxAmount;
 
     // Snapshot current names, prices, surcharges, and tax rate into transaction
+    // Note: Sensitive card details are NEVER accepted, stored, or processed.
     const newTx: Transaction = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       receiptNumber: generateReceiptNumber(),
@@ -286,6 +287,7 @@ export default function App() {
       taxAmount,
       total,
       paymentMethod,
+      cardRef,
       cashTendered,
       changeDue,
     };

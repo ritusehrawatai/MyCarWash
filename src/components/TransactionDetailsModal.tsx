@@ -14,7 +14,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { Transaction, UserRole } from '../types/pos';
-import { formatCurrency } from '../data/constants';
+import { formatCurrency, formatPaymentMethodName } from '../data/constants';
 
 interface TransactionDetailsModalProps {
   transaction: Transaction | null;
@@ -60,6 +60,9 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
     switch (method) {
       case 'CASH':
         return <Banknote className="w-4 h-4 text-emerald-600" />;
+      case 'DEBIT_CARD':
+        return <CreditCard className="w-4 h-4 text-sky-600" />;
+      case 'CREDIT_CARD':
       case 'CARD':
         return <CreditCard className="w-4 h-4 text-blue-600" />;
       default:
@@ -244,7 +247,12 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
               </span>
               <div className="flex items-center gap-1.5 font-bold text-slate-900">
                 {getPaymentIcon(transaction.paymentMethod)}
-                <span>{transaction.paymentMethod}</span>
+                <span>{formatPaymentMethodName(transaction.paymentMethod)}</span>
+                {transaction.cardRef && (
+                  <span className="text-slate-500 font-mono text-[11px]">
+                    ({transaction.cardRef})
+                  </span>
+                )}
               </div>
             </div>
 

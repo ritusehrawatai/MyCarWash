@@ -14,7 +14,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import { Transaction } from '../types/pos';
-import { formatCurrency } from '../data/constants';
+import { formatCurrency, formatPaymentMethodName } from '../data/constants';
 
 interface TransactionsTableProps {
   transactions: Transaction[];
@@ -33,6 +33,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
     switch (method) {
       case 'CASH':
         return <Banknote className="w-3.5 h-3.5 text-emerald-600" />;
+      case 'DEBIT_CARD':
+        return <CreditCard className="w-3.5 h-3.5 text-sky-600" />;
+      case 'CREDIT_CARD':
       case 'CARD':
         return <CreditCard className="w-3.5 h-3.5 text-blue-600" />;
       default:
@@ -192,7 +195,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                   <td className="py-3 px-4 whitespace-nowrap">
                     <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700">
                       {getPaymentIcon(tx.paymentMethod)}
-                      <span>{tx.paymentMethod}</span>
+                      <span>{formatPaymentMethodName(tx.paymentMethod)}</span>
                     </span>
                   </td>
 
@@ -292,7 +295,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
 
                 <div className="flex items-center gap-1.5 font-semibold">
                   {getPaymentIcon(tx.paymentMethod)}
-                  <span>{tx.paymentMethod}</span>
+                  <span>{formatPaymentMethodName(tx.paymentMethod)}</span>
                   <ChevronRight className="w-3.5 h-3.5 text-slate-600 ml-1" />
                 </div>
               </div>

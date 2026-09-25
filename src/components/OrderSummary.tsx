@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { WashService, VehicleType, AddOn, PaymentMethod } from '../types/pos';
 import { formatCurrency } from '../data/constants';
+import { CardPaymentPanel } from './CardPaymentPanel';
 
 interface OrderSummaryProps {
   selectedService: WashService;
@@ -21,7 +22,7 @@ interface OrderSummaryProps {
   taxRate: number;
   paymentMethod: PaymentMethod | null;
   onSelectPaymentMethod: (method: PaymentMethod) => void;
-  onCompleteSale: (cashTendered?: number, changeDue?: number) => void;
+  onCompleteSale: (cashTendered?: number, changeDue?: number, cardRef?: string) => void;
   onResetOrder: () => void;
 }
 
@@ -59,7 +60,8 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
 
   const changeDue = cashTendered !== null && cashTendered >= total ? cashTendered - total : 0;
 
-  const handleComplete = () => {
+  // Handler for cash / other complete
+  const handleCompleteNonCard = () => {
     if (!paymentMethod) return;
     if (paymentMethod === 'CASH') {
       const tendered = cashTendered !== null && cashTendered >= total ? cashTendered : total;
@@ -69,6 +71,13 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
       onCompleteSale();
     }
   };
+
+  // Handler for card completion from CardPaymentPanel
+  const handleCardPaymentSuccess = (maskedCard?: string) => {
+    onCompleteSale(undefined, undefined, maskedCard);
+  };
+
+  const isCardSelected = paymentMethod === 'DEBIT_CARD' || paymentMethod === 'CREDIT_CARD';
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-5 sm:p-6 flex flex-col justify-between h-full">
@@ -174,36 +183,53 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           <label className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
             Payment Method
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* CASH */}
             <button
               type="button"
               onClick={() => onSelectPaymentMethod('CASH')}
-              className={`py-3.5 px-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer font-bold text-xs sm:text-sm select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+              className={`py-3 px-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer font-bold text-xs select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                 paymentMethod === 'CASH'
                   ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-white'
               }`}
             >
-              <Banknote className="w-5 h-5" />
-              <span>CASH</span>
+              <Banknote className="w-4 h-4" />
+              <span>Cash</span>
             </button>
 
-            {/* CARD */}
+            {/* DEBIT CARD */}
             <button
               type="button"
               onClick={() => {
-                onSelectPaymentMethod('CARD');
+                onSelectPaymentMethod('DEBIT_CARD');
                 setCashTendered(null);
               }}
-              className={`py-3.5 px-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer font-bold text-xs sm:text-sm select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
-                paymentMethod === 'CARD'
+              className={`py-3 px-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer font-bold text-xs select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                paymentMethod === 'DEBIT_CARD'
                   ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-white'
               }`}
             >
-              <CreditCard className="w-5 h-5" />
-              <span>CARD</span>
+              <CreditCard className="w-4 h-4" />
+              <span>Debit Card</span>
+            </button>
+
+            {/* CREDIT CARD */}
+            <button
+              type="button"
+              onClick={() => {
+                onSelectPaymentMethod('CREDIT_CARD');
+                setCashTendered(null);
+              }}
+              className={`py-3 px-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer font-bold text-xs select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                paymentMethod === 'CREDIT_CARD'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-white'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Credit Card</span>
             </button>
 
             {/* OTHER */}
@@ -213,16 +239,30 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
                 onSelectPaymentMethod('OTHER');
                 setCashTendered(null);
               }}
-              className={`py-3.5 px-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer font-bold text-xs sm:text-sm select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+              className={`py-3 px-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer font-bold text-xs select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                 paymentMethod === 'OTHER'
                   ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-white'
               }`}
             >
-              <Layers className="w-5 h-5" />
-              <span>OTHER</span>
+              <Layers className="w-4 h-4" />
+              <span>Other</span>
             </button>
           </div>
+
+          {/* Card Payment Panel (when Debit or Credit Card is selected) */}
+          {isCardSelected && (
+            <div className="mt-3">
+              <CardPaymentPanel
+                cardType={paymentMethod === 'DEBIT_CARD' ? 'Debit Card' : 'Credit Card'}
+                amountDue={total}
+                onPaymentSuccess={handleCardPaymentSuccess}
+                onCancel={() => {
+                  onSelectPaymentMethod('CASH');
+                }}
+              />
+            </div>
+          )}
 
           {/* Cash Tender Helper (only when CASH is selected) */}
           {paymentMethod === 'CASH' && (
@@ -256,24 +296,26 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         </div>
       </div>
 
-      {/* Action Area: COMPLETE SALE Button */}
-      <div className="mt-6 pt-2">
-        {paymentMethod ? (
-          <button
-            type="button"
-            onClick={handleComplete}
-            className="w-full py-4 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-base tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/50 animate-pulse"
-          >
-            <CheckCircle2 className="w-5 h-5" />
-            <span>COMPLETE SALE — {formatCurrency(total)}</span>
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        ) : (
-          <div className="w-full py-3.5 px-4 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-center text-sm font-semibold flex items-center justify-center gap-2 select-none">
-            <span>Select Payment Method to Complete</span>
-          </div>
-        )}
-      </div>
+      {/* Action Area: Non-card payment complete or prompt */}
+      {!isCardSelected && (
+        <div className="mt-6 pt-2">
+          {paymentMethod ? (
+            <button
+              type="button"
+              onClick={handleCompleteNonCard}
+              className="w-full py-4 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-base tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/50"
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              <span>COMPLETE SALE — {formatCurrency(total)}</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          ) : (
+            <div className="w-full py-3.5 px-4 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-center text-sm font-semibold flex items-center justify-center gap-2 select-none">
+              <span>Select Payment Method to Complete</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
