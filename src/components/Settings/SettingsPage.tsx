@@ -20,10 +20,14 @@ import {
   POSServiceItem,
   POSVehicleType,
   Transaction,
+  MembershipPlan,
+  CustomerMembership,
+  MembershipUsage,
 } from '../../types/pos';
 import { formatCurrency } from '../../data/constants';
 import { ServiceModal } from './ServiceModal';
 import { VehicleModal } from './VehicleModal';
+import { MembershipManagementSection } from '../Admin/MembershipManagementSection';
 
 interface SettingsPageProps {
   settings: POSSettings;
@@ -32,9 +36,16 @@ interface SettingsPageProps {
   onSaveServices: (services: POSServiceItem[]) => void;
   onSaveVehicleTypes: (vehicleTypes: POSVehicleType[]) => void;
   onSaveTaxRate: (rate: number) => void;
+  membershipPlans?: MembershipPlan[];
+  memberships?: CustomerMembership[];
+  membershipUsages?: MembershipUsage[];
+  onSaveMembershipPlan?: (plan: MembershipPlan) => void;
+  onTogglePlanActive?: (planId: string) => void;
+  onCancelMembership?: (membershipId: string) => void;
+  initialSubTab?: SettingsSubTab;
 }
 
-type SettingsSubTab = 'all' | 'business' | 'services' | 'vehicles' | 'tax';
+type SettingsSubTab = 'all' | 'business' | 'services' | 'vehicles' | 'tax' | 'memberships';
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
   settings,
@@ -43,8 +54,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onSaveServices,
   onSaveVehicleTypes,
   onSaveTaxRate,
+  membershipPlans = [],
+  memberships = [],
+  membershipUsages = [],
+  onSaveMembershipPlan,
+  onTogglePlanActive,
+  onCancelMembership,
+  initialSubTab = 'all',
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>('all');
+  const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>(initialSubTab);
 
   // Business info form state
   const [businessName, setBusinessName] = useState(settings.business.businessName);
@@ -295,6 +313,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             }`}
           >
             Tax Rate
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('memberships')}
+            className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
+              activeSubTab === 'memberships'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                : 'text-slate-700 hover:text-slate-900'
+            }`}
+          >
+            Membership Plans
           </button>
         </div>
       </div>
@@ -952,6 +981,21 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               </p>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* 5. Membership Management Section */}
+      {(activeSubTab === 'all' || activeSubTab === 'memberships') && (
+        <section className="pt-2">
+          <MembershipManagementSection
+            plans={membershipPlans}
+            memberships={memberships}
+            usages={membershipUsages}
+            services={settings.services}
+            onSavePlan={onSaveMembershipPlan || (() => {})}
+            onTogglePlanActive={onTogglePlanActive || (() => {})}
+            onCancelMembership={onCancelMembership || (() => {})}
+          />
         </section>
       )}
 

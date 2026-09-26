@@ -2,6 +2,7 @@ import React from 'react';
 import { Droplets, Sparkles, Shield, Crown, Check } from 'lucide-react';
 import { POSServiceItem } from '../types/pos';
 import { formatCurrency } from '../data/constants';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ServiceSelectorProps {
   services: POSServiceItem[];
@@ -14,6 +15,8 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
   selectedServiceId,
   onSelectService,
 }) => {
+  const { t } = useLanguage();
+
   const getServiceIcon = (service: POSServiceItem) => {
     const id = service.id.toLowerCase();
     const name = service.name.toLowerCase();
@@ -37,13 +40,13 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
     return (
       <section className="space-y-2.5">
         <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">
+          <span className="w-6 h-6 rounded-full bg-slate-900 dark:bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
             1
           </span>
-          <h2 className="text-base font-bold text-slate-900">Select Wash Service</h2>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('pos.step1WashService')}</h2>
         </div>
-        <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl text-center text-slate-700 text-sm">
-          No active wash services available. Please activate or create a wash service in Settings.
+        <div className="p-6 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-slate-700 dark:text-slate-300 text-sm">
+          {t('settings.servicesTitle')}
         </div>
       </section>
     );
@@ -53,12 +56,11 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
     <section className="space-y-2.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">
+          <span className="w-6 h-6 rounded-full bg-slate-900 dark:bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
             1
           </span>
-          <h2 className="text-base font-bold text-slate-900">Select Wash Service</h2>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('pos.step1WashService')}</h2>
         </div>
-        <span className="text-xs text-slate-700 font-medium">Choose 1 package</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -71,8 +73,8 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
               onClick={() => onSelectService(service)}
               className={`relative text-left p-4 rounded-xl border-2 transition-all duration-150 flex flex-col justify-between min-h-[140px] cursor-pointer select-none group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                 isSelected
-                  ? 'bg-blue-50/70 border-blue-600 shadow-md ring-1 ring-blue-600/30'
-                  : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 shadow-xs'
+                  ? 'bg-blue-50/70 dark:bg-blue-950/50 border-blue-600 shadow-md ring-1 ring-blue-600/30'
+                  : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50/60 dark:hover:bg-slate-800 shadow-xs'
               }`}
             >
               {/* Badge if available */}
@@ -81,7 +83,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                   className={`absolute top-2.5 right-2.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
                     isSelected
                       ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-600'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                   }`}
                 >
                   {service.badge}
@@ -91,23 +93,23 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
               {/* Service header */}
               <div className="pr-12">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                  <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-blue-100 dark:bg-blue-900/60' : 'bg-slate-100 dark:bg-slate-700'}`}>
                     {getServiceIcon(service)}
                   </div>
-                  <h3 className="font-bold text-slate-900 text-base leading-snug">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug">
                     {service.name}
                   </h3>
                 </div>
                 {service.description && (
-                  <p className="text-xs text-slate-700 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
                     {service.description}
                   </p>
                 )}
               </div>
 
               {/* Price and selected indicator */}
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-2xl font-extrabold text-slate-900 font-mono-numbers">
+              <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono-numbers">
                   {formatCurrency(service.price)}
                 </span>
 
@@ -115,7 +117,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                   className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
                     isSelected
                       ? 'bg-blue-600 text-white'
-                      : 'border-2 border-slate-300 group-hover:border-slate-400'
+                      : 'border-2 border-slate-300 dark:border-slate-600 group-hover:border-slate-400 dark:group-hover:border-slate-500'
                   }`}
                 >
                   {isSelected && <Check className="w-4 h-4 stroke-[3]" />}

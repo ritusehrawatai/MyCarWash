@@ -64,16 +64,14 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
     );
 
     if (duplicate) {
-      setError(`A vehicle type named "${trimmedName}" already exists.`);
+      setError(`A vehicle type with the name "${trimmedName}" already exists.`);
       return;
     }
 
     const vehicleData: POSVehicleType = {
-      id: vehicleToEdit
-        ? vehicleToEdit.id
-        : `veh_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      id: vehicleToEdit ? vehicleToEdit.id : `vehicle_${Date.now()}`,
       name: trimmedName,
-      surcharge: Math.round(parsedSurcharge * 100) / 100,
+      surcharge: parsedSurcharge,
       active,
       description: description.trim() || undefined,
     };
@@ -83,36 +81,42 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-in fade-in duration-150">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in duration-150 transition-colors">
+        {/* Header */}
+        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
               <Car className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-slate-900 text-base">
-              {vehicleToEdit ? 'Edit Vehicle Type' : 'Add Vehicle Type'}
-            </h3>
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                {vehicleToEdit ? 'Edit Vehicle Type' : 'Add Vehicle Type'}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Classification & oversize surcharge</p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200/60"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
-              {error}
-            </div>
-          )}
+        {/* Validation Error Banner */}
+        {error && (
+          <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold">
+            {error}
+          </div>
+        )}
 
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-3.5">
           {/* Vehicle Name */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
               Vehicle Type Name <span className="text-rose-500">*</span>
             </label>
             <input
@@ -120,18 +124,18 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Car, SUV/Truck, Van, Motorcycle"
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+              placeholder="e.g. SUV, Pickup Truck, Van"
+              className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
 
           {/* Surcharge */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-              Surcharge ($ USD) <span className="text-rose-500">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+              Price Surcharge ($) <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold text-sm">
                 $
               </span>
               <input
@@ -142,17 +146,17 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
                 value={surcharge}
                 onChange={(e) => setSurcharge(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-8 pr-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="w-full pl-8 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
               />
             </div>
-            <p className="text-[11px] text-slate-700 mt-1">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
               Enter 0 for no surcharge (e.g. standard car). Enter extra amount for oversize vehicles.
             </p>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
               Description (Optional)
             </label>
             <input
@@ -160,23 +164,23 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Sedan, Coupe, Compact or Pickup, Minivan"
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
 
           {/* Active Status */}
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
             <div>
-              <span className="text-xs font-bold text-slate-900 block">Active in POS</span>
-              <span className="text-[11px] text-slate-700">
+              <span className="text-xs font-bold text-slate-900 dark:text-white block">Active in POS</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
                 Inactive vehicle types will not be shown as options during new sales.
               </span>
             </div>
             <button
               type="button"
               onClick={() => setActive(!active)}
-              className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                active ? 'bg-emerald-600' : 'bg-slate-300'
+              className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                active ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
               }`}
             >
               <div
@@ -188,17 +192,17 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
           </div>
 
           {/* Buttons */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+              className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-xs flex items-center gap-1.5"
+              className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Check className="w-4 h-4" />
               <span>{vehicleToEdit ? 'Save Changes' : 'Create Vehicle Type'}</span>

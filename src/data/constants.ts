@@ -131,8 +131,32 @@ export function formatPaymentMethodName(method: PaymentMethod | string): string 
       return 'Credit Card';
     case 'CARD':
       return 'Card';
+    case 'MEMBERSHIP':
+      return 'Membership';
     case 'OTHER':
       return 'Other';
+    default:
+      return method;
+  }
+}
+
+export function formatLocalizedPaymentMethod(
+  method: PaymentMethod | string,
+  t: (path: string) => string
+): string {
+  switch (method) {
+    case 'CASH':
+      return t('pos.cash');
+    case 'DEBIT_CARD':
+      return t('pos.debitCard');
+    case 'CREDIT_CARD':
+      return t('pos.creditCard');
+    case 'CARD':
+      return t('pos.demoCard');
+    case 'MEMBERSHIP':
+      return t('pos.membershipPass');
+    case 'OTHER':
+      return t('pos.other');
     default:
       return method;
   }

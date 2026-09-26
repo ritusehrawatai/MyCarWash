@@ -106,7 +106,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         return false;
       }
 
-      // 4. Search Query (Receipt #, Service Name, Payment, Vehicle Type)
+      // 4. Search Query (Receipt #, Customer, Service Name, Payment, Vehicle Type, License Plate)
       if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase().trim();
         const receiptMatch = tx.receiptNumber.toLowerCase().includes(query);
@@ -115,12 +115,30 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         const vehicleMatch = tx.vehicleType.name.toLowerCase().includes(query);
         const addOnsMatch = tx.addOns.some((a) => a.name.toLowerCase().includes(query));
 
+        // Customer & Vehicle description match
+        const customerMatch =
+          (tx.customerNameAtSale && tx.customerNameAtSale.toLowerCase().includes(query)) ||
+          (tx.customerId && tx.customerId.toLowerCase().includes(query));
+        const vehicleDescMatch =
+          tx.vehicleDescriptionAtSale && tx.vehicleDescriptionAtSale.toLowerCase().includes(query);
+
         // Friendly payment terms match
         const debitMatch = query.includes('debit') && tx.paymentMethod === 'DEBIT_CARD';
         const creditMatch = query.includes('credit') && (tx.paymentMethod === 'CREDIT_CARD' || tx.paymentMethod === 'CARD');
         const cardMatch = query.includes('card') && (tx.paymentMethod === 'DEBIT_CARD' || tx.paymentMethod === 'CREDIT_CARD' || tx.paymentMethod === 'CARD');
 
-        if (!receiptMatch && !serviceMatch && !paymentMatch && !vehicleMatch && !addOnsMatch && !debitMatch && !creditMatch && !cardMatch) {
+        if (
+          !receiptMatch &&
+          !serviceMatch &&
+          !paymentMatch &&
+          !vehicleMatch &&
+          !addOnsMatch &&
+          !customerMatch &&
+          !vehicleDescMatch &&
+          !debitMatch &&
+          !creditMatch &&
+          !cardMatch
+        ) {
           return false;
         }
       }
