@@ -18,6 +18,7 @@ import { CustomerProfileModal } from './CustomerProfileModal';
 import { AddCustomerModal } from './AddCustomerModal';
 import { AddVehicleModal } from './AddVehicleModal';
 import { Sparkles } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface CustomersPageProps {
   customers: Customer[];
@@ -48,6 +49,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
   userRole = 'admin',
   vehicleTypes,
 }) => {
+  const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -130,10 +132,10 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-slate-800 transition-colors">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <span>Customer Management</span>
+            <span>{t('customers.managementTitle')}</span>
           </h2>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-            Directory of registered drivers, linked vehicles, and transaction history.
+            {t('customers.managementSubtitle')}
           </p>
         </div>
 
@@ -143,7 +145,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 self-start sm:self-auto cursor-pointer"
         >
           <UserPlus className="w-4 h-4" />
-          <span>+ Add Customer</span>
+          <span>{t('customers.addCustomerButton')}</span>
         </button>
       </div>
 
@@ -151,42 +153,42 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-            Total Customers
+            {t('customers.totalCustomersMetric')}
           </span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 block">
             {customers.length}
           </span>
-          <span className="text-[11px] text-slate-600 dark:text-slate-400">Saved profiles</span>
+          <span className="text-[11px] text-slate-600 dark:text-slate-400">{t('customers.savedProfilesNote')}</span>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-            Registered Vehicles
+            {t('customers.registeredVehiclesMetric')}
           </span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 block">
             {vehicles.filter((v) => v.active !== false).length}
           </span>
-          <span className="text-[11px] text-slate-600 dark:text-slate-400">Linked to accounts</span>
+          <span className="text-[11px] text-slate-600 dark:text-slate-400">{t('customers.linkedToAccountsNote')}</span>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-            Customer Revenue
+            {t('customers.customerRevenueMetric')}
           </span>
           <span className="text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400 font-mono-numbers mt-1 block">
             {formatCurrency(overallTotalRevenue)}
           </span>
-          <span className="text-[11px] text-blue-600 dark:text-blue-400">From account sales</span>
+          <span className="text-[11px] text-blue-600 dark:text-blue-400">{t('customers.fromAccountSalesNote')}</span>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-            Walk-in Anonymous
+            {t('customers.walkInMetric')}
           </span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono-numbers mt-1 block">
             {transactions.filter((t) => !t.customerId).length}
           </span>
-          <span className="text-[11px] text-slate-600 dark:text-slate-400">Guest sales</span>
+          <span className="text-[11px] text-slate-600 dark:text-slate-400">{t('customers.guestSalesNote')}</span>
         </div>
       </div>
 
@@ -198,7 +200,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by customer name, phone, email, or license plate..."
+            placeholder={t('customers.searchPlaceholder')}
             className="w-full pl-10 pr-9 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
           {searchQuery && (
@@ -217,17 +219,17 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-            Customer Directory ({filteredCustomers.length})
+            {t('customers.customerDirectoryTitle', { count: filteredCustomers.length })}
           </h3>
-          <span className="text-xs text-slate-500 dark:text-slate-400">Click row to open profile & vehicle manager</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{t('customers.clickRowHelp')}</span>
         </div>
 
         {filteredCustomers.length === 0 ? (
           <div className="p-10 text-center space-y-2">
             <Users className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
-            <p className="font-bold text-sm text-slate-700 dark:text-slate-300">No customers found</p>
+            <p className="font-bold text-sm text-slate-700 dark:text-slate-300">{t('customers.noCustomersFound')}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {searchQuery ? 'Try clearing your search query' : 'Create your first customer to get started.'}
+              {searchQuery ? t('customers.tryClearingSearch') : t('customers.createFirstCustomer')}
             </p>
           </div>
         ) : (
@@ -235,14 +237,14 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px]">
-                  <th className="py-3 px-4">Customer Name</th>
-                  <th className="py-3 px-3">Phone</th>
-                  <th className="py-3 px-3">Email</th>
-                  <th className="py-3 px-3 text-center">Vehicles</th>
-                  <th className="py-3 px-3 text-center">Visits</th>
-                  <th className="py-3 px-3">Last Visit</th>
-                  <th className="py-3 px-4 text-right">Total Spent</th>
-                  <th className="py-3 px-3 text-right">Action</th>
+                  <th className="py-3 px-4">{t('customers.customerNameCol')}</th>
+                  <th className="py-3 px-3">{t('customers.phoneCol')}</th>
+                  <th className="py-3 px-3">{t('customers.emailCol')}</th>
+                  <th className="py-3 px-3 text-center">{t('customers.vehiclesCol')}</th>
+                  <th className="py-3 px-3 text-center">{t('customers.visitsCol')}</th>
+                  <th className="py-3 px-3">{t('customers.lastVisitCol')}</th>
+                  <th className="py-3 px-4 text-right">{t('customers.totalSpentCol')}</th>
+                  <th className="py-3 px-3 text-right">{t('customers.actionsCol')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -254,7 +256,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                   };
 
                   const formattedLastVisit = stat.lastVisit
-                    ? new Date(stat.lastVisit).toLocaleDateString('en-US', {
+                    ? new Date(stat.lastVisit).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
@@ -289,12 +291,12 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
 
                       {/* Phone */}
                       <td className="py-3 px-3 font-mono text-slate-700 dark:text-slate-300">
-                        {c.phone || <span className="text-slate-400 dark:text-slate-500 italic">None</span>}
+                        {c.phone || <span className="text-slate-400 dark:text-slate-500 italic">—</span>}
                       </td>
 
                       {/* Email */}
                       <td className="py-3 px-3 text-slate-600 dark:text-slate-400 truncate max-w-[150px]">
-                        {c.email || <span className="text-slate-400 dark:text-slate-500 italic">None</span>}
+                        {c.email || <span className="text-slate-400 dark:text-slate-500 italic">—</span>}
                       </td>
 
                       {/* Vehicles */}
@@ -326,9 +328,9 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                             type="button"
                             onClick={() => onStartNewWashWithCustomer(c)}
                             className="px-2.5 py-1 text-[11px] font-bold bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-600 hover:text-white text-blue-700 dark:text-blue-300 rounded-lg transition-colors cursor-pointer whitespace-nowrap shadow-xs"
-                            title="Start new wash for this customer"
+                            title={t('pos.newWash')}
                           >
-                            New Wash
+                            {t('pos.newWash')}
                           </button>
                           <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 inline" />
                         </div>

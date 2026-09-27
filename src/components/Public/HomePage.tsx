@@ -180,16 +180,16 @@ export const HomePage: React.FC<HomePageProps> = ({
               {/* Feature Highlights */}
               <div className="pt-6 grid grid-cols-3 gap-3 border-t border-slate-200 dark:border-slate-800/80 text-left">
                 <div>
-                  <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white block">3 Mins</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Express Wash Lane</span>
+                  <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white block">{t('home.expressLane3Min')}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('home.expressLaneLabel')}</span>
                 </div>
                 <div>
                   <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white block">100%</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Spot-Free Finish</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('home.spotFreeFinish')}</span>
                 </div>
                 <div>
-                  <span className="text-xl sm:text-2xl font-black text-blue-600 dark:text-cyan-400 block">Walk-In</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">No Appointment</span>
+                  <span className="text-xl sm:text-2xl font-black text-blue-600 dark:text-cyan-400 block">{t('home.noAppointment')}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('home.convenientWalkIn')}</span>
                 </div>
               </div>
             </div>
@@ -212,9 +212,9 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                        Ceramic Gloss Shield
+                        {t('home.ceramicGlossShield')}
                       </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Triple Foam Carnauba Polish</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.tripleFoamPolish')}</p>
                     </div>
                   </div>
                   <div className="flex items-center text-amber-500 dark:text-amber-400 text-xs font-bold gap-1">
@@ -233,14 +233,13 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto space-y-3 mb-14">
             <span className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-cyan-400">
-              Transparent Pricing
+              {t('home.transparentPricing')}
             </span>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-950 dark:text-white tracking-tight">
-              Our Wash Packages
+              {t('home.ourWashPackages')}
             </h2>
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
-              Select the service package that fits your vehicle's needs. All prices are synchronized live
-              from our station register.
+              {t('home.washPackagesDesc')}
             </p>
           </div>
 
@@ -271,7 +270,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       <span className="text-4xl font-black text-slate-900 dark:text-white font-mono-numbers">
                         {formatCurrency(pkg.price)}
                       </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium ml-1">/ wash</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium ml-1">{t('memberships.perWash')}</span>
                     </div>
 
                     {pkg.features && pkg.features.length > 0 && (
@@ -295,7 +294,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-transparent'
                     }`}
                   >
-                    Get Started
+                    {t('home.getStarted')}
                   </button>
                 </div>
               );
@@ -307,8 +306,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div className="mt-14 p-6 sm:p-8 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors duration-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                  <h4 className="text-lg font-bold text-slate-900 dark:text-white">Optional Express Add-ons</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Available on any wash at the kiosk or bay</p>
+                  <h4 className="text-lg font-bold text-slate-900 dark:text-white">{t('home.optionalAddOns')}</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('home.availableOnAnyWash')}</p>
                 </div>
               </div>
 
@@ -338,14 +337,13 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
             <span className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-cyan-400">
-              The Shine Difference
+              {t('home.shineDifference')}
             </span>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-950 dark:text-white tracking-tight">
-              Why Choose Us
+              {t('nav.whyChooseUs')}
             </h2>
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
-              Built from the ground up for vehicle protection, fast turnaround, and uncompromising
-              cleanliness.
+              {t('home.whySubtitle')}
             </p>
           </div>
 
@@ -354,10 +352,9 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-cyan-400 flex items-center justify-center font-bold">
                 <Clock className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-slate-900 dark:text-white">Fast Service</h3>
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white">{t('home.fastService')}</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Express tunnel lanes get you in, cleaned, dried, and back on the road in under 3
-                minutes.
+                {t('home.fastServiceDesc')}
               </p>
             </div>
 
@@ -365,10 +362,9 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-cyan-400 flex items-center justify-center font-bold">
                 <Award className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-slate-900 dark:text-white">Professional Car Care</h3>
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white">{t('home.professionalCare')}</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Gentle closed-cell foam technology and pH-balanced cleansers protect your vehicle's
-                paint.
+                {t('home.professionalCareDesc')}
               </p>
             </div>
 
@@ -376,10 +372,9 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-cyan-400 flex items-center justify-center font-bold">
                 <Droplets className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-slate-900 dark:text-white">Quality Cleaning</h3>
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white">{t('home.qualityCleaning')}</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Reverse osmosis purified rinse ensures zero water spots, while high-velocity air dryers
-                wipe moisture away.
+                {t('home.qualityCleaningDesc')}
               </p>
             </div>
 
@@ -387,10 +382,9 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-cyan-400 flex items-center justify-center font-bold">
                 <Car className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-lg text-slate-900 dark:text-white">Convenient Walk-In</h3>
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white">{t('home.convenientWalkIn')}</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                No appointments required. Simply drive up to any lane, select your wash, and experience
-                the shine.
+                {t('home.convenientWalkInDesc')}
               </p>
             </div>
           </div>
@@ -401,11 +395,10 @@ export const HomePage: React.FC<HomePageProps> = ({
       <section className="py-16 bg-gradient-to-r from-blue-700 via-indigo-700 to-cyan-600 text-white relative overflow-hidden">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-5 relative z-10">
           <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
-            Ready to make your car shine?
+            {t('home.readyToShine')}
           </h2>
           <p className="text-sm sm:text-base text-blue-100 max-w-xl mx-auto">
-            Create your free customer account to save your vehicles, track your wash history, and speed
-            up checkout at the lane.
+            {t('home.readyToShineDesc')}
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
@@ -413,14 +406,14 @@ export const HomePage: React.FC<HomePageProps> = ({
               onClick={onNavigateSignUp}
               className="px-8 py-3.5 bg-white text-slate-950 font-extrabold text-sm sm:text-base rounded-2xl shadow-xl hover:bg-slate-100 transition-all cursor-pointer"
             >
-              Sign Up Now
+              {t('auth.signUpNow')}
             </button>
             <button
               type="button"
               onClick={onNavigateCustomerLogin}
               className="px-6 py-3.5 bg-blue-900/40 hover:bg-blue-900/60 border border-white/20 text-white font-bold text-sm sm:text-base rounded-2xl transition-all cursor-pointer"
             >
-              Existing Customer Login
+              {t('auth.signInNow')}
             </button>
           </div>
         </div>
@@ -445,7 +438,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             {/* Contact details */}
             <div className="space-y-2">
-              <span className="font-bold uppercase tracking-wider text-slate-300 block">Contact & Visit</span>
+              <span className="font-bold uppercase tracking-wider text-slate-300 block">{t('home.contactAndVisit')}</span>
               <p className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-cyan-400 shrink-0" />
                 <span>{businessInfo.address || '123 Main Street'}</span>
@@ -458,7 +451,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             {/* Portal Links (Staff vs Customer) */}
             <div className="space-y-2">
-              <span className="font-bold uppercase tracking-wider text-slate-300 block">Access Portals</span>
+              <span className="font-bold uppercase tracking-wider text-slate-300 block">{t('home.accessPortals')}</span>
               <div className="flex flex-col gap-1.5">
                 {onNavigateMemberships && (
                   <button
@@ -467,7 +460,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     className="text-left text-cyan-400 hover:underline cursor-pointer flex items-center gap-1.5"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>View Membership Plans</span>
+                    <span>{t('home.ctaMemberships')}</span>
                   </button>
                 )}
                 <button
@@ -475,14 +468,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                   onClick={onNavigateCustomerLogin}
                   className="text-left text-cyan-400 hover:underline cursor-pointer"
                 >
-                  → Customer Account Portal
+                  → {t('home.customerAccountPortal')}
                 </button>
                 <button
                   type="button"
                   onClick={onNavigateAdminLogin}
                   className="text-left text-slate-400 hover:text-white hover:underline cursor-pointer"
                 >
-                  → Administration & Cashier Login
+                  → {t('home.adminCashierLogin')}
                 </button>
               </div>
             </div>

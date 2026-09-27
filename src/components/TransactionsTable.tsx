@@ -15,7 +15,8 @@ import {
   User,
 } from 'lucide-react';
 import { Transaction } from '../types/pos';
-import { formatCurrency, formatPaymentMethodName } from '../data/constants';
+import { formatCurrency, formatPaymentMethodName, formatLocalizedPaymentMethod } from '../data/constants';
+import { useLanguage } from '../context/LanguageContext';
 
 interface TransactionsTableProps {
   transactions: Transaction[];
@@ -30,6 +31,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   onStartNewWash,
   hasFiltersActive,
 }) => {
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'es' ? 'es-ES' : 'en-US';
+
   const getPaymentIcon = (method: string) => {
     switch (method) {
       case 'CASH':
@@ -51,14 +55,14 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
           <Ban className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-          <span>Voided</span>
+          <span>{t('common.voided')}</span>
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
         <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-        <span>Completed</span>
+        <span>{t('common.completed')}</span>
       </span>
     );
   };
@@ -71,12 +75,12 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         </div>
         <div className="max-w-sm space-y-1">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {hasFiltersActive ? 'No matching transactions found' : 'No transactions yet'}
+            {hasFiltersActive ? t('transactions.noMatchingFound') : t('transactions.noTransactionsYet')}
           </h3>
           <p className="text-xs text-slate-600 dark:text-slate-400">
             {hasFiltersActive
-              ? 'Try adjusting your search query, date range, or status filters.'
-              : 'Complete your first walk-in car wash sale on the POS screen to record a transaction.'}
+              ? t('transactions.adjustFilterHelp')
+              : t('transactions.firstSaleHelp')}
           </p>
         </div>
         <button
@@ -85,7 +89,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
           className="mt-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-blue-600/20 transition-all flex items-center gap-2 cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Start New Wash</span>
+          <span>{t('transactions.startNewWash')}</span>
         </button>
       </div>
     );
@@ -98,15 +102,15 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 uppercase font-bold tracking-wider text-[11px]">
-              <th className="py-3.5 px-4">Receipt #</th>
-              <th className="py-3.5 px-3">Date</th>
-              <th className="py-3.5 px-3">Customer</th>
-              <th className="py-3.5 px-4">Service</th>
-              <th className="py-3.5 px-3">Vehicle</th>
-              <th className="py-3.5 px-3">Add-ons</th>
-              <th className="py-3.5 px-4 text-right">Total</th>
-              <th className="py-3.5 px-4">Payment</th>
-              <th className="py-3.5 px-4 text-center">Status</th>
+              <th className="py-3.5 px-4">{t('transactions.receiptCol')}</th>
+              <th className="py-3.5 px-3">{t('common.date')}</th>
+              <th className="py-3.5 px-3">{t('transactions.customerCol')}</th>
+              <th className="py-3.5 px-4">{t('transactions.serviceCol')}</th>
+              <th className="py-3.5 px-3">{t('transactions.vehicleCol')}</th>
+              <th className="py-3.5 px-3">{t('transactions.addOnsCol')}</th>
+              <th className="py-3.5 px-4 text-right">{t('transactions.totalCol')}</th>
+              <th className="py-3.5 px-4">{t('transactions.paymentCol')}</th>
+              <th className="py-3.5 px-4 text-center">{t('transactions.statusCol')}</th>
               <th className="py-3.5 px-3 text-right"></th>
             </tr>
           </thead>
@@ -114,7 +118,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
             {transactions.map((tx) => {
               const isVoided = tx.status === 'voided';
               const dateObj = new Date(tx.timestamp);
-              const formattedDate = dateObj.toLocaleDateString('en-US', {
+              const formattedDate = dateObj.toLocaleDateString(dateLocale, {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
@@ -143,7 +147,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                   {/* Customer */}
                   <td className="py-3 px-3">
                     <span className="font-semibold text-slate-900 dark:text-white block truncate max-w-[130px]">
-                      {tx.customerNameAtSale || <span className="text-slate-400 dark:text-slate-500 font-normal italic">Guest</span>}
+                      {tx.customerNameAtSale || <span className="text-slate-400 dark:text-slate-500 font-normal italic">{t('transactions.guest')}</span>}
                     </span>
                     {tx.customerId && (
                       <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
@@ -159,7 +163,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                       {tx.isMembershipWash && (
                         <span className="text-[10px] font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-100 dark:bg-cyan-950/70 border border-cyan-300 dark:border-cyan-800 px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5">
                           <Sparkles className="w-2.5 h-2.5 text-cyan-500" />
-                          <span>Pass</span>
+                          <span>{t('transactions.passBadge')}</span>
                         </span>
                       )}
                     </div>
@@ -189,7 +193,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                         {tx.addOns.map((a) => a.name).join(', ')}
                       </div>
                     ) : (
-                      <span className="text-slate-400 dark:text-slate-500 italic">None</span>
+                      <span className="text-slate-400 dark:text-slate-500 italic">{t('common.none')}</span>
                     )}
                   </td>
 
@@ -210,7 +214,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                   <td className="py-3 px-4 whitespace-nowrap">
                     <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
                       {getPaymentIcon(tx.paymentMethod)}
-                      <span>{formatPaymentMethodName(tx.paymentMethod)}</span>
+                      <span>{formatLocalizedPaymentMethod(tx.paymentMethod, t)}</span>
                     </span>
                   </td>
 
@@ -235,11 +239,11 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         {transactions.map((tx) => {
           const isVoided = tx.status === 'voided';
           const dateObj = new Date(tx.timestamp);
-          const formattedDate = dateObj.toLocaleDateString('en-US', {
+          const formattedDate = dateObj.toLocaleDateString(dateLocale, {
             month: 'short',
             day: 'numeric',
           });
-          const formattedTime = dateObj.toLocaleTimeString('en-US', {
+          const formattedTime = dateObj.toLocaleTimeString(dateLocale, {
             hour: 'numeric',
             minute: '2-digit',
             hour12: true,
@@ -266,7 +270,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
               {/* Customer info if present */}
               <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
                 <User className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                <span className="font-semibold">{tx.customerNameAtSale || 'Guest Customer'}</span>
+                <span className="font-semibold">{tx.customerNameAtSale || t('pos.guestCustomer')}</span>
               </div>
 
               {/* Service & Total */}
@@ -297,7 +301,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
               {/* Add-ons list if any */}
               {tx.addOns.length > 0 && (
                 <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">
-                  Add-ons: <span className="font-medium">{tx.addOns.map((a) => a.name).join(', ')}</span>
+                  {t('transactions.addOnsCol')}: <span className="font-medium">{tx.addOns.map((a) => a.name).join(', ')}</span>
                 </p>
               )}
 
@@ -316,7 +320,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
 
                 <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
                   {getPaymentIcon(tx.paymentMethod)}
-                  <span>{formatPaymentMethodName(tx.paymentMethod)}</span>
+                  <span>{formatLocalizedPaymentMethod(tx.paymentMethod, t)}</span>
                   <ChevronRight className="w-3.5 h-3.5 text-slate-400 ml-1" />
                 </div>
               </div>

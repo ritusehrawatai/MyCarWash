@@ -26,6 +26,7 @@ import {
 } from '../../types/pos';
 import { formatCurrency } from '../../data/constants';
 import { formatMembershipStatusBadge } from '../../data/membershipData';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface MembershipManagementSectionProps {
   plans: MembershipPlan[];
@@ -46,6 +47,7 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
   onTogglePlanActive,
   onCancelMembership,
 }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'plans' | 'usages'>('overview');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'monthly' | 'yearly' | 'cancelled' | 'expired'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,73 +139,73 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
         {/* Active Members */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            <span>Active</span>
+            <span>{t('common.active')}</span>
             <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono-numbers">
             {activeMembers.length}
           </div>
-          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Active Subscribers</p>
+          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">{t('admin.metricActiveMembers')}</p>
         </div>
 
         {/* Monthly Members */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            <span>Monthly</span>
+            <span>{t('memberships.billingMonthly')}</span>
             <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono-numbers">
             {monthlyMembers.length}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">Monthly Billing</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('admin.metricMonthlyMembers')}</p>
         </div>
 
         {/* Yearly Members */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            <span>Yearly</span>
+            <span>{t('memberships.billingYearly')}</span>
             <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono-numbers">
             {yearlyMembers.length}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">Annual Passes</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('admin.metricYearlyMembers')}</p>
         </div>
 
         {/* Cancelled Members */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            <span>Cancelled</span>
+            <span>{t('admin.filterCancelled')}</span>
             <Ban className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono-numbers">
             {cancelledMembers.length}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">Preserved Records</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('admin.metricCancelledMembers')}</p>
         </div>
 
         {/* Expired Members */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            <span>Expired</span>
+            <span>{t('admin.filterExpired')}</span>
             <Clock className="w-4 h-4 text-rose-600 dark:text-rose-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono-numbers">
             {expiredMembers.length}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">Past Due / Ended</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('admin.metricExpiredMembers')}</p>
         </div>
 
         {/* Membership Revenue */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            <span>Revenue</span>
+            <span>{t('admin.metricMonthlyRevenue')}</span>
             <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono-numbers">
             {formatCurrency(totalRevenue)}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">Total Signups Value</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('customers.totalSpentMetric')}</p>
         </div>
       </div>
 
@@ -219,7 +221,7 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            Customer Memberships ({memberships.length})
+            {t('admin.tabMemberships')} ({memberships.length})
           </button>
           <button
             type="button"
@@ -230,7 +232,7 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            Membership Plans ({plans.length})
+            {t('admin.tabPlans')} ({plans.length})
           </button>
           <button
             type="button"
@@ -241,7 +243,7 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            Redemptions History ({usages.length})
+            {t('admin.tabUsages')} ({usages.length})
           </button>
         </div>
 
@@ -252,7 +254,7 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-auto"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Create Plan</span>
+            <span>{t('admin.createPlanButton')}</span>
           </button>
         )}
       </div>

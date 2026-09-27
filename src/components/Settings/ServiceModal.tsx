@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Sparkles } from 'lucide-react';
 import { POSServiceItem, ServiceType } from '../../types/pos';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
   serviceToEdit,
   existingServices,
 }) => {
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [type, setType] = useState<ServiceType>('wash');
@@ -52,13 +54,13 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError('Service name cannot be empty.');
+      setError(t('settings.nameRequired'));
       return;
     }
 
     const parsedPrice = parseFloat(price);
     if (isNaN(parsedPrice) || parsedPrice < 0) {
-      setError('Price must be a valid non-negative number ($0 or greater).');
+      setError(t('settings.priceNonNegative'));
       return;
     }
 
@@ -70,7 +72,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
     );
 
     if (duplicate) {
-      setError(`A service with the name "${trimmedName}" already exists.`);
+      setError(t('settings.serviceNameExists', { name: trimmedName }));
       return;
     }
 
@@ -99,9 +101,9 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base">
-                {serviceToEdit ? 'Edit Service' : 'Add New Service'}
+                {serviceToEdit ? t('settings.editService') : t('settings.addService')}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Wash package or add-on extra</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('settings.washOrAddon')}</p>
             </div>
           </div>
           <button
@@ -125,7 +127,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
           {/* Service Type Selection */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Service Type
+              {t('settings.serviceTypeLabel')}
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -137,7 +139,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                     : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
-                Wash Package
+                {t('settings.washPackage')}
               </button>
               <button
                 type="button"
@@ -148,7 +150,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                     : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
-                Add-on Extra
+                {t('settings.addonExtra')}
               </button>
             </div>
           </div>
@@ -156,7 +158,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
           {/* Service Name */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Service Name <span className="text-rose-500">*</span>
+              {t('settings.serviceNameLabel')} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -171,7 +173,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
           {/* Price */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Base Price ($) <span className="text-rose-500">*</span>
+              {t('settings.servicePriceLabel')} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold text-sm">
@@ -189,14 +191,14 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
               />
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Prices cannot be negative. Old transactions will preserve original charged prices.
+              {t('settings.priceNotice')}
             </p>
           </div>
 
           {/* Description */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Description (Optional)
+              {t('settings.descriptionLabel')} <span className="text-slate-400 dark:text-slate-500 font-normal">({t('common.optional')})</span>
             </label>
             <input
               type="text"
@@ -211,7 +213,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
           {type === 'wash' && (
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Badge Label (Optional)
+                {t('settings.badgeLabel')} <span className="text-slate-400 dark:text-slate-500 font-normal">({t('common.optional')})</span>
               </label>
               <input
                 type="text"
@@ -226,9 +228,9 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
           {/* Active Status */}
           <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
             <div>
-              <span className="text-xs font-bold text-slate-900 dark:text-white block">Active in POS</span>
+              <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('settings.activeInPOS')}</span>
               <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                Inactive services will not appear as options on the New Wash screen.
+                {t('settings.inactiveNotice')}
               </span>
             </div>
             <button
@@ -253,14 +255,14 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Check className="w-4 h-4" />
-              <span>{serviceToEdit ? 'Save Changes' : 'Create Service'}</span>
+              <span>{serviceToEdit ? t('common.save') : t('settings.createService')}</span>
             </button>
           </div>
         </form>

@@ -98,7 +98,7 @@ export const FindCustomerModal: React.FC<FindCustomerModalProps> = ({
             className="px-3 py-2 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <UserPlus className="w-3.5 h-3.5" />
-            <span>+ {t('common.actions')}</span>
+            <span>{t('pos.newCustomer')}</span>
           </button>
         </div>
 
@@ -146,7 +146,7 @@ export const FindCustomerModal: React.FC<FindCustomerModalProps> = ({
                         return (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800">
                             <Sparkles className="w-3 h-3 text-cyan-500" />
-                            <span>{activeMem.planNameSnapshot} ({activeMem.remainingWashes} left)</span>
+                            <span>{activeMem.planNameSnapshot} ({activeMem.remainingWashes} {t('admin.washesRemainingCol').toLowerCase()})</span>
                           </span>
                         );
                       })()}
@@ -168,7 +168,7 @@ export const FindCustomerModal: React.FC<FindCustomerModalProps> = ({
                       <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium">
                         <Car className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                         <span>
-                          {custVehicles.length} {custVehicles.length === 1 ? 'vehicle' : 'vehicles'}
+                          {custVehicles.length} {t('customers.vehiclesCol').toLowerCase()}
                         </span>
                       </span>
                     </div>
@@ -190,7 +190,7 @@ export const FindCustomerModal: React.FC<FindCustomerModalProps> = ({
 
                   <div className="flex items-center gap-2">
                     <span className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 group-hover:border-blue-300 group-hover:bg-blue-600 group-hover:text-white transition-all text-slate-700 dark:text-slate-200 shadow-xs">
-                      {t('common.confirm')}
+                      {t('common.select')}
                     </span>
                     <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                   </div>

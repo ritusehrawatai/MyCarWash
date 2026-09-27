@@ -110,7 +110,7 @@ export const CardPaymentPanel: React.FC<CardPaymentPanelProps> = ({
           </div>
           <div>
             <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-              {cardType} {t('pos.creditCard')}
+              {cardType}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">{t('pos.simulatedCardPayment')}</p>
           </div>
@@ -240,7 +240,7 @@ export const CardPaymentPanel: React.FC<CardPaymentPanelProps> = ({
               onClick={() => handleApplyPreset('valid')}
               className="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-semibold hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors disabled:opacity-50 cursor-pointer"
             >
-              Demo Auto-Fill
+              {t('pos.demoAutoFill')}
             </button>
             <button
               type="button"
@@ -248,7 +248,7 @@ export const CardPaymentPanel: React.FC<CardPaymentPanelProps> = ({
               onClick={() => handleApplyPreset('declined')}
               className="px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-semibold hover:bg-rose-200 dark:hover:bg-rose-900 transition-colors disabled:opacity-50 cursor-pointer"
             >
-              Simulate Decline
+              {t('pos.simulateDecline')}
             </button>
           </div>
         </div>

@@ -9,6 +9,7 @@ import {
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionDetailsModal } from './TransactionDetailsModal';
 import { Transaction, UserRole } from '../types/pos';
+import { useLanguage } from '../context/LanguageContext';
 
 interface TransactionsPageProps {
   transactions: Transaction[];
@@ -25,6 +26,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
   onStartNewWash,
   userRole = 'admin',
 }) => {
+  const { t } = useLanguage();
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilterOption>('today');
@@ -177,10 +179,10 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
       {/* 1 & 10. Completed Transactions Table / Responsive Cards */}
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
-          <h3 className="text-sm font-bold text-slate-800">
-            Transactions ({filteredTransactions.length} of {transactions.length})
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+            {t('transactions.transactionsCount', { filtered: filteredTransactions.length, total: transactions.length })}
           </h3>
-          <span className="text-xs text-slate-700">Click any row to view details or void</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{t('transactions.clickToViewOrVoid')}</span>
         </div>
 
         <TransactionsTable

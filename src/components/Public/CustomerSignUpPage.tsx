@@ -42,25 +42,25 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
 
     // 1. Required fields check
     if (!trimmedFirst || !trimmedLast || !trimmedPhone || !trimmedEmail || !password) {
-      setErrorMessage('Please fill in all required fields.');
+      setErrorMessage(t('auth.fillRequiredFields'));
       return;
     }
 
     // 2. Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      setErrorMessage('Please enter a valid email address.');
+      setErrorMessage(t('auth.validEmailError'));
       return;
     }
 
     // 3. Password match check
     if (password !== confirmPassword) {
-      setErrorMessage('Password and Confirm Password do not match.');
+      setErrorMessage(t('auth.passwordsDoNotMatch'));
       return;
     }
 
     if (password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
+      setErrorMessage(t('auth.passwordMinLength'));
       return;
     }
 
@@ -69,7 +69,7 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
       (acc) => acc.email.toLowerCase() === trimmedEmail
     );
     if (duplicateEmail) {
-      setErrorMessage('An account with this email address already exists. Please log in.');
+      setErrorMessage(t('auth.emailExistsError'));
       return;
     }
 
@@ -237,7 +237,7 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
             {/* Confirm Password */}
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                {t('common.confirm')} {t('common.password')} <span className="text-blue-600 dark:text-cyan-400">*</span>
+                {t('common.confirmPassword')} <span className="text-blue-600 dark:text-cyan-400">*</span>
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />

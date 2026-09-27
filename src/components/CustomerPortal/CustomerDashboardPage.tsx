@@ -18,7 +18,7 @@ import {
   Home,
 } from 'lucide-react';
 import { Customer, CustomerVehicle, Transaction, AuthUser, CustomerMembership, MembershipUsage } from '../../types/pos';
-import { formatCurrency, formatPaymentMethodName } from '../../data/constants';
+import { formatCurrency, formatPaymentMethodName, formatLocalizedPaymentMethod } from '../../data/constants';
 import { formatVehicleDescription } from '../../data/customerData';
 import { formatMembershipStatusBadge } from '../../data/membershipData';
 import { ThemeToggle } from '../ThemeToggle';
@@ -149,14 +149,13 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 dark:bg-cyan-400/10 border border-white/30 dark:border-cyan-400/30 text-white dark:text-cyan-400 text-xs font-bold">
               <Sparkles className="w-3 h-3" />
-              <span>Verified Customer Profile</span>
+              <span>{t('dashboard.verifiedProfile')}</span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              Welcome back, {customer?.firstName || user.name}!
+              {t('dashboard.welcomeCustomer', { name: customer?.firstName || user.name })}
             </h1>
             <p className="text-xs sm:text-sm text-blue-100 dark:text-slate-300 max-w-xl">
-              Manage your registered vehicles, view itemized wash receipts, and speed through checkout
-              at any of our express lanes.
+              {t('dashboard.manageVehiclesSubtitle')}
             </p>
           </div>
 
@@ -166,7 +165,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
             className="self-start md:self-auto px-5 py-3 bg-white hover:bg-slate-100 dark:bg-gradient-to-r dark:from-cyan-400 dark:to-blue-500 dark:hover:from-cyan-300 dark:hover:to-blue-400 text-slate-900 dark:text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all cursor-pointer flex items-center gap-2"
           >
             <Plus className="w-4 h-4 text-blue-600 dark:text-slate-950" />
-            <span>+ Add New Vehicle</span>
+            <span>{t('dashboard.addNewVehicle')}</span>
           </button>
         </div>
 
@@ -178,7 +177,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
             className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-5 space-y-1 shadow-xs transition-all hover:border-blue-400 dark:hover:border-cyan-500 cursor-pointer"
           >
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>My Membership</span>
+              <span>{t('dashboard.tabMembership')}</span>
               <Sparkles className="w-4 h-4 text-cyan-500" />
             </div>
             {membership && membership.status === 'active' ? (
@@ -187,17 +186,17 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                   {membership.planNameSnapshot}
                 </div>
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                  <span>● Active</span>
-                  <span className="text-slate-400 font-normal">· {membership.remainingWashes} of {membership.includedWashes} washes</span>
+                  <span>● {t('dashboard.activeStatus')}</span>
+                  <span className="text-slate-400 font-normal">· {t('dashboard.washesLeftCount', { remaining: membership.remainingWashes, total: membership.includedWashes })}</span>
                 </p>
               </>
             ) : (
               <>
                 <div className="text-lg font-black text-slate-700 dark:text-slate-300">
-                  No Active Plan
+                  {t('dashboard.noActivePlan')}
                 </div>
                 <p className="text-xs text-blue-600 dark:text-cyan-400 font-semibold hover:underline">
-                  Join Membership Club →
+                  {t('dashboard.joinMembershipClub')}
                 </p>
               </>
             )}
@@ -209,11 +208,11 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
             className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-5 space-y-1 shadow-xs transition-all hover:border-blue-400 dark:hover:border-cyan-500 cursor-pointer"
           >
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>My Vehicles</span>
+              <span>{t('dashboard.tabVehicles')}</span>
               <Car className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
             </div>
             <div className="text-3xl font-black text-slate-900 dark:text-white">{customerVehicles.length}</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Registered cars on profile</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('dashboard.registeredCarsCount')}</p>
           </div>
 
           {/* Visits Count */}
@@ -222,23 +221,23 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
             className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-5 space-y-1 shadow-xs transition-all hover:border-blue-400 dark:hover:border-cyan-500 cursor-pointer"
           >
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>Total Washes</span>
+              <span>{t('dashboard.totalWashes')}</span>
               <Receipt className="w-4 h-4 text-indigo-600 dark:text-blue-400" />
             </div>
             <div className="text-3xl font-black text-slate-900 dark:text-white">{customerTransactions.length}</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Visits to express station</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('dashboard.visitsToStationCount')}</p>
           </div>
 
           {/* Total Spent */}
           <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-5 space-y-1 shadow-xs transition-colors">
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>Total Spent</span>
+              <span>{t('customers.totalSpentCol')}</span>
               <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="text-3xl font-black text-blue-600 dark:text-cyan-400 font-mono-numbers">
               {formatCurrency(totalSpent)}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Lifetime wash volume</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('dashboard.lifetimeVolume')}</p>
           </div>
         </div>
 
@@ -301,29 +300,29 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
               <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-xs transition-colors">
                 <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
                   <User className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
-                  <span>Customer Profile Information</span>
+                  <span>{t('dashboard.customerProfileInfo')}</span>
                 </h3>
 
                 <div className="space-y-3 text-xs">
                   <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-slate-500 dark:text-slate-400">Account ID:</span>
+                    <span className="text-slate-500 dark:text-slate-400">{t('dashboard.accountId')}:</span>
                     <span className="font-mono text-blue-600 dark:text-cyan-400 font-bold">{customer?.id || user.customerId || 'CUS-NEW'}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-slate-500 dark:text-slate-400">Full Name:</span>
+                    <span className="text-slate-500 dark:text-slate-400">{t('dashboard.fullName')}:</span>
                     <span className="font-semibold text-slate-900 dark:text-white">{customer?.firstName} {customer?.lastName}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-slate-500 dark:text-slate-400">Email Address:</span>
+                    <span className="text-slate-500 dark:text-slate-400">{t('customers.emailCol')}:</span>
                     <span className="text-slate-900 dark:text-white">{user.email}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-slate-500 dark:text-slate-400">Phone Number:</span>
-                    <span className="font-mono text-slate-900 dark:text-white">{customer?.phone || 'Not provided'}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{t('dashboard.phoneNumber')}:</span>
+                    <span className="font-mono text-slate-900 dark:text-white">{customer?.phone || t('dashboard.notProvided')}</span>
                   </div>
                   {customer?.notes && (
                     <div className="py-2">
-                      <span className="text-slate-500 dark:text-slate-400 block mb-1">Customer Preferences:</span>
+                      <span className="text-slate-500 dark:text-slate-400 block mb-1">{t('dashboard.customerPreferences')}:</span>
                       <p className="text-slate-700 dark:text-slate-300 italic">{customer.notes}</p>
                     </div>
                   )}
@@ -334,7 +333,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
               <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-xs transition-colors">
                 <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
                   <Clock className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
-                  <span>Recent Activity</span>
+                  <span>{t('dashboard.recentActivity')}</span>
                 </h3>
 
                 {lastVisit ? (
@@ -351,7 +350,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                     <div className="space-y-1">
                       <p className="font-bold text-sm text-slate-900 dark:text-white">{lastVisit.service.name}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Vehicle: {lastVisit.vehicleDescriptionAtSale || lastVisit.vehicleType.name}
+                        {t('receipt.vehicle')}: {lastVisit.vehicleDescriptionAtSale || lastVisit.vehicleType.name}
                       </p>
                     </div>
 
@@ -364,14 +363,14 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                         onClick={() => onOpenTransactionReceipt(lastVisit)}
                         className="text-xs font-bold text-blue-600 dark:text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
                       >
-                        <span>View Receipt</span>
+                        <span>{t('dashboard.viewReceipt')}</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
-                    No visit recorded yet. Visit our wash lane anytime!
+                    {t('dashboard.noVisitsYet')}
                   </div>
                 )}
               </div>
@@ -416,10 +415,10 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                       <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/15 space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold uppercase tracking-wider text-blue-200">
-                            Included Wash Pass Allocation
+                            {t('dashboard.includedWashAllocation')}
                           </span>
                           <span className="text-sm font-black text-cyan-300 font-mono">
-                            {membership.remainingWashes} of {membership.includedWashes} Washes Left
+                            {t('dashboard.washesLeftCount', { remaining: membership.remainingWashes, total: membership.includedWashes })}
                           </span>
                         </div>
 
@@ -437,10 +436,10 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
 
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-blue-200 pt-1">
                           <span>
-                            Next renewal: <strong className="text-white">{new Date(membership.nextBillingDate).toLocaleDateString()}</strong>
+                            {t('dashboard.nextRenewal', { date: new Date(membership.nextBillingDate).toLocaleDateString() })}
                           </span>
                           <span>
-                            Service covered: <strong className="text-white">{membership.includedServiceName}</strong>
+                            {t('dashboard.serviceCovered', { service: membership.includedServiceName })}
                           </span>
                         </div>
                       </div>
@@ -450,30 +449,30 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                         <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
                           <div className="font-bold text-white flex items-center gap-1.5">
                             <Sparkles className="w-4 h-4 text-cyan-400" />
-                            <span>Included Washes</span>
+                            <span>{t('dashboard.includedWashesBenefit')}</span>
                           </div>
                           <p className="text-blue-200 text-[11px]">
-                            {membership.includedWashes} {membership.includedServiceName}s every {membership.billingFrequency}
+                            {membership.includedWashes} {membership.includedServiceName} {t('memberships.perMonth')}
                           </p>
                         </div>
 
                         <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
                           <div className="font-bold text-white flex items-center gap-1.5">
                             <TrendingUp className="w-4 h-4 text-emerald-400" />
-                            <span>Add-On Savings</span>
+                            <span>{t('dashboard.addOnSavingsBenefit')}</span>
                           </div>
                           <p className="text-blue-200 text-[11px]">
-                            {membership.addOnDiscountPercent || 10}% member discount on all add-on upgrades
+                            {t('dashboard.addOnSavingsDesc', { percent: membership.addOnDiscountPercent || 10 })}
                           </p>
                         </div>
 
                         <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
                           <div className="font-bold text-white flex items-center gap-1.5">
                             <ShieldCheck className="w-4 h-4 text-blue-400" />
-                            <span>Express Lane Priority</span>
+                            <span>{t('dashboard.expressLaneBenefit')}</span>
                           </div>
                           <p className="text-blue-200 text-[11px]">
-                            Speedy cashier lookup with your member name or vehicle plate
+                            {t('dashboard.expressLaneDesc')}
                           </p>
                         </div>
                       </div>
@@ -486,7 +485,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                             onClick={onNavigateMemberships}
                             className="text-xs text-cyan-300 hover:text-cyan-200 font-bold underline cursor-pointer"
                           >
-                            Browse other membership plans →
+                            {t('dashboard.browseOtherPlans')}
                           </button>
                         )}
 
@@ -498,11 +497,11 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                                 onClick={() => setShowCancelConfirm(true)}
                                 className="px-3.5 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
                               >
-                                Cancel Membership
+                                {t('dashboard.cancelMembership')}
                               </button>
                             ) : (
                               <div className="flex items-center gap-2 p-2 bg-rose-950/80 border border-rose-500/60 rounded-xl text-xs">
-                                <span className="text-rose-200">Confirm cancel?</span>
+                                <span className="text-rose-200">{t('dashboard.confirmCancelQuestion')}</span>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -511,14 +510,14 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                                   }}
                                   className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg cursor-pointer"
                                 >
-                                  Yes, Cancel
+                                  {t('dashboard.confirmCancelAction')}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setShowCancelConfirm(false)}
                                   className="px-2 py-1 bg-slate-800 text-slate-300 rounded-lg cursor-pointer"
                                 >
-                                  Keep Plan
+                                  {t('dashboard.keepMyPlan')}
                                 </button>
                               </div>
                             )}
@@ -532,7 +531,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                   <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-xs">
                     <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-cyan-500" />
-                      <span>Membership Wash Usage History</span>
+                      <span>{t('dashboard.membershipUsageHistory')}</span>
                     </h3>
 
                     {membershipUsages.filter((u) => u.customerId === user.customerId || u.membershipId === membership.id).length > 0 ? (
@@ -546,12 +545,12 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                                   {usage.serviceName}
                                 </div>
                                 <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-                                  {usage.vehicleDescription || 'Standard Vehicle'} · {new Date(usage.date).toLocaleString()}
+                                  {usage.vehicleDescription || t('pos.standardVehicle')} · {new Date(usage.date).toLocaleString()}
                                 </div>
                               </div>
                               <div className="text-right">
                                 <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold rounded-full font-mono text-[11px]">
-                                  FREE (Covered by Pass)
+                                  {t('dashboard.freeCoveredByPass')}
                                 </span>
                               </div>
                             </div>
@@ -559,7 +558,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                       </div>
                     ) : (
                       <p className="text-xs text-slate-500 dark:text-slate-400 py-3 italic">
-                        No membership washes used yet this billing cycle. Visit our wash lane anytime to redeem!
+                        {t('dashboard.noMembershipUsages')}
                       </p>
                     )}
                   </div>
@@ -573,25 +572,25 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
 
                   <div className="max-w-md mx-auto space-y-2">
                     <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                      Save More with a Car Wash Membership
+                      {t('dashboard.noActiveMembershipTitle')}
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Join our Wash Club to receive 4 exterior washes every month, 10% off selected add-ons, and express lane priority.
+                      {t('dashboard.noActiveMembershipDesc')}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto text-left text-xs">
                     <div className="p-3 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
-                      <div className="font-bold text-slate-900 dark:text-white">Monthly & Yearly</div>
-                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">Flexible plans to match how often you drive</p>
+                      <div className="font-bold text-slate-900 dark:text-white">{t('dashboard.flexiblePlansTitle')}</div>
+                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">{t('dashboard.flexiblePlansDesc')}</p>
                     </div>
                     <div className="p-3 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
-                      <div className="font-bold text-slate-900 dark:text-white">Member Discounts</div>
-                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">10% off ceramic coatings, hot wax, and add-ons</p>
+                      <div className="font-bold text-slate-900 dark:text-white">{t('dashboard.memberDiscountsTitle')}</div>
+                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">{t('dashboard.memberDiscountsDesc')}</p>
                     </div>
                     <div className="p-3 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
-                      <div className="font-bold text-slate-900 dark:text-white">Cancel Anytime</div>
-                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">No contracts, no hassle, manage online</p>
+                      <div className="font-bold text-slate-900 dark:text-white">{t('dashboard.cancelAnytimeTitle')}</div>
+                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">{t('dashboard.cancelAnytimeDesc')}</p>
                     </div>
                   </div>
 
@@ -602,7 +601,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                       className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black text-sm rounded-2xl shadow-lg shadow-blue-500/25 transition-all cursor-pointer inline-flex items-center gap-2"
                     >
                       <Sparkles className="w-4 h-4" />
-                      <span>View Available Membership Plans</span>
+                      <span>{t('dashboard.viewAvailablePlansButton')}</span>
                     </button>
                   )}
                 </div>
@@ -614,30 +613,30 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
           {activeTab === 'vehicles' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-base text-slate-900 dark:text-white">Your Saved Vehicles</h3>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">{t('customers.savedVehiclesTitle')}</h3>
                 <button
                   type="button"
                   onClick={onOpenAddVehicle}
                   className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Add Vehicle</span>
+                  <span>{t('pos.addVehicle')}</span>
                 </button>
               </div>
 
               {customerVehicles.length === 0 ? (
                 <div className="p-10 bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl text-center space-y-3 shadow-xs">
                   <Car className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">No vehicles added yet</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{t('dashboard.noVehiclesAddedYet')}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Add your vehicle to speed up lane lookup and keep an organized service history.
+                    {t('dashboard.addVehicleToSpeedUp')}
                   </p>
                   <button
                     type="button"
                     onClick={onOpenAddVehicle}
                     className="mt-2 px-4 py-2 bg-blue-600 dark:bg-cyan-400 text-white dark:text-slate-950 font-bold text-xs rounded-xl cursor-pointer"
                   >
-                    + Register Your First Car
+                    {t('dashboard.registerYourFirstCar')}
                   </button>
                 </div>
               ) : (
@@ -660,7 +659,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                           type="button"
                           onClick={() => onOpenEditVehicle(veh)}
                           className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                          title="Edit vehicle"
+                          title={t('common.edit')}
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -668,20 +667,20 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
 
                       <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 pt-2 border-t border-slate-100 dark:border-slate-700/60">
                         <div className="flex justify-between">
-                          <span>License Plate:</span>
+                          <span>{t('receipt.licensePlate')}:</span>
                           <span className="font-mono text-slate-900 dark:text-white font-bold">
-                            {veh.licensePlate || 'None'}
+                            {veh.licensePlate || t('common.none')}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Category:</span>
+                          <span>{t('customers.categoryLabel')}:</span>
                           <span className="text-slate-900 dark:text-white">
                             {veh.vehicleTypeId === 'suv_truck' ? 'SUV / Truck' : 'Car'}
                           </span>
                         </div>
                         {veh.color && (
                           <div className="flex justify-between">
-                            <span>Color:</span>
+                            <span>{t('customers.colorLabel')}:</span>
                             <span className="text-slate-900 dark:text-white">{veh.color}</span>
                           </div>
                         )}
@@ -696,15 +695,14 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
           {/* TAB 3: Wash History */}
           {activeTab === 'history' && (
             <div className="space-y-4">
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">Your Wash History</h3>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">{t('dashboard.tabHistory')}</h3>
 
               {customerTransactions.length === 0 ? (
                 <div className="p-10 bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl text-center space-y-2 shadow-xs">
                   <Receipt className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">No wash transactions recorded yet</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{t('dashboard.noWashTransactionsYet')}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    When you purchase a wash at our express station, your itemized receipts will appear
-                    here.
+                    {t('dashboard.itemizedReceiptsWillAppear')}
                   </p>
                 </div>
               ) : (
@@ -713,13 +711,13 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px]">
-                          <th className="py-3 px-4">Receipt #</th>
-                          <th className="py-3 px-3">Date</th>
-                          <th className="py-3 px-3">Vehicle</th>
-                          <th className="py-3 px-3">Service</th>
-                          <th className="py-3 px-3">Add-ons</th>
-                          <th className="py-3 px-4 text-right">Total</th>
-                          <th className="py-3 px-3">Payment</th>
+                          <th className="py-3 px-4">{t('receipt.receiptNumber')}</th>
+                          <th className="py-3 px-3">{t('receipt.dateTime')}</th>
+                          <th className="py-3 px-3">{t('receipt.vehicle')}</th>
+                          <th className="py-3 px-3">{t('receipt.washService')}</th>
+                          <th className="py-3 px-3">{t('receipt.addOns')}</th>
+                          <th className="py-3 px-4 text-right">{t('receipt.total')}</th>
+                          <th className="py-3 px-3">{t('receipt.paymentMethod')}</th>
                           <th className="py-3 px-3"></th>
                         </tr>
                       </thead>
@@ -734,7 +732,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                               {tx.receiptNumber}
                             </td>
                             <td className="py-3 px-3 text-slate-600 dark:text-slate-300">
-                              {new Date(tx.timestamp).toLocaleDateString()}
+                              {new Date(tx.timestamp).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')}
                             </td>
                             <td className="py-3 px-3 text-slate-900 dark:text-white truncate max-w-[150px]">
                               {tx.vehicleDescriptionAtSale || tx.vehicleType.name}
@@ -745,17 +743,17 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                             <td className="py-3 px-3 text-slate-500 dark:text-slate-400 truncate max-w-[130px]">
                               {tx.addOns.length > 0
                                 ? tx.addOns.map((a) => a.name).join(', ')
-                                : 'None'}
+                                : t('common.none')}
                             </td>
                             <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
                               {formatCurrency(tx.total)}
                             </td>
                             <td className="py-3 px-3 text-slate-600 dark:text-slate-300">
-                              {formatPaymentMethodName(tx.paymentMethod)}
+                              {formatLocalizedPaymentMethod(tx.paymentMethod, t)}
                             </td>
                             <td className="py-3 px-3 text-right">
                               <span className="text-xs text-blue-600 dark:text-cyan-400 font-bold hover:underline">
-                                View
+                                {t('common.view')}
                               </span>
                             </td>
                           </tr>

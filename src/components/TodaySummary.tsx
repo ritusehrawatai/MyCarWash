@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 import { Transaction } from '../types/pos';
 import { formatCurrency } from '../data/constants';
+import { useLanguage } from '../context/LanguageContext';
 
 interface TodaySummaryProps {
   transactions: Transaction[];
 }
 
 export const TodaySummary: React.FC<TodaySummaryProps> = ({ transactions }) => {
+  const { t, language } = useLanguage();
   const todayStr = new Date().toDateString();
 
   // All today's transactions
@@ -57,9 +59,9 @@ export const TodaySummary: React.FC<TodaySummaryProps> = ({ transactions }) => {
             <TrendingUp className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-tight">Today's Summary</h2>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-tight">{t('today.title')}</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {new Date().toLocaleDateString('en-US', {
+              {new Date().toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
                 weekday: 'long',
                 month: 'short',
                 day: 'numeric',
@@ -72,7 +74,7 @@ export const TodaySummary: React.FC<TodaySummaryProps> = ({ transactions }) => {
         {voidedTodayCount > 0 && (
           <div className="flex items-center gap-1.5 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-800">
             <Ban className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-            <span>{voidedTodayCount} voided today (excluded)</span>
+            <span>{t('today.voidedTodayExcluded', { count: voidedTodayCount })}</span>
           </div>
         )}
       </div>
@@ -82,73 +84,73 @@ export const TodaySummary: React.FC<TodaySummaryProps> = ({ transactions }) => {
         {/* Metric 1: Number of transactions */}
         <div className="bg-slate-50/80 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200/80 dark:border-slate-700">
           <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-xs font-medium">
-            <span>Transactions</span>
+            <span>{t('today.transactionsTitle')}</span>
             <Receipt className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
           </div>
           <div className="mt-1.5 text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-mono-numbers">
             {activeToday.length}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Completed today</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{t('today.completedToday')}</p>
         </div>
 
         {/* Metric 2: Total Sales */}
         <div className="bg-blue-50/60 dark:bg-blue-950/40 rounded-xl p-3 border border-blue-200/70 dark:border-blue-800/70">
           <div className="flex items-center justify-between text-blue-800 dark:text-blue-300 text-xs font-semibold">
-            <span>Total Sales</span>
+            <span>{t('today.totalSalesTitle')}</span>
             <TrendingUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="mt-1.5 text-xl sm:text-2xl font-extrabold text-blue-700 dark:text-blue-400 font-mono-numbers">
             {formatCurrency(totalSales)}
           </div>
-          <p className="text-[11px] text-blue-600 dark:text-blue-300 mt-0.5">Gross net revenue</p>
+          <p className="text-[11px] text-blue-600 dark:text-blue-300 mt-0.5">{t('today.grossRevenue')}</p>
         </div>
 
         {/* Metric 3: Cash Sales */}
         <div className="bg-emerald-50/60 dark:bg-emerald-950/40 rounded-xl p-3 border border-emerald-200/70 dark:border-emerald-800/70">
           <div className="flex items-center justify-between text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
-            <span>Cash Sales</span>
+            <span>{t('today.cashSalesTitle')}</span>
             <Banknote className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="mt-1.5 text-xl sm:text-2xl font-extrabold text-emerald-700 dark:text-emerald-400 font-mono-numbers">
             {formatCurrency(cashSales)}
           </div>
-          <p className="text-[11px] text-emerald-600 dark:text-emerald-300 mt-0.5">Collected in drawer</p>
+          <p className="text-[11px] text-emerald-600 dark:text-emerald-300 mt-0.5">{t('today.inDrawer')}</p>
         </div>
 
         {/* Metric 4: Card Sales */}
         <div className="bg-indigo-50/60 dark:bg-indigo-950/40 rounded-xl p-3 border border-indigo-200/70 dark:border-indigo-800/70">
           <div className="flex items-center justify-between text-indigo-800 dark:text-indigo-300 text-xs font-semibold">
-            <span>Card Sales</span>
+            <span>{t('today.cardSalesTitle')}</span>
             <CreditCard className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div className="mt-1.5 text-xl sm:text-2xl font-extrabold text-indigo-700 dark:text-indigo-400 font-mono-numbers">
             {formatCurrency(cardSales)}
           </div>
-          <p className="text-[11px] text-indigo-600 dark:text-indigo-300 mt-0.5">Debit & Credit volume</p>
+          <p className="text-[11px] text-indigo-600 dark:text-indigo-300 mt-0.5">{t('today.cardVolume')}</p>
         </div>
 
         {/* Metric 5: Other Payments */}
         <div className="bg-amber-50/60 dark:bg-amber-950/40 rounded-xl p-3 border border-amber-200/70 dark:border-amber-800/70">
           <div className="flex items-center justify-between text-amber-800 dark:text-amber-300 text-xs font-semibold">
-            <span>Other Payments</span>
+            <span>{t('today.otherPayments')}</span>
             <Layers className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="mt-1.5 text-xl sm:text-2xl font-extrabold text-amber-700 dark:text-amber-400 font-mono-numbers">
             {formatCurrency(otherSales)}
           </div>
-          <p className="text-[11px] text-amber-600 dark:text-amber-300 mt-0.5">Mobile / Voucher / Fleet</p>
+          <p className="text-[11px] text-amber-600 dark:text-amber-300 mt-0.5">{t('today.otherVolume')}</p>
         </div>
 
         {/* Metric 6: Number of cars washed */}
         <div className="bg-slate-50/80 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200/80 dark:border-slate-700">
           <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-xs font-medium">
-            <span>Cars Washed</span>
+            <span>{t('today.carsWashed')}</span>
             <Car className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
           </div>
           <div className="mt-1.5 text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-mono-numbers">
             {carsWashed}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Vehicles processed</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{t('today.vehiclesProcessed')}</p>
         </div>
       </div>
     </section>

@@ -73,7 +73,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
               type="button"
               onClick={onNavigateHome}
               className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 cursor-pointer hover:scale-105 transition-transform"
-              title="Return to Home"
+              title={t('memberships.returnToHome')}
             >
               <Sparkles className="w-6 h-6 text-white" />
             </button>
@@ -82,7 +82,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                 {businessInfo.businessName || 'ShineExpress Car Wash'}
               </span>
               <span className="text-[11px] text-blue-600 dark:text-cyan-400 font-semibold tracking-wider uppercase block">
-                Membership Club
+                {t('memberships.passClubBadge')}
               </span>
             </div>
           </div>
@@ -154,19 +154,19 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
         <div className="max-w-4xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-100 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-cyan-400 text-xs font-bold tracking-wide uppercase">
             <Star className="w-3.5 h-3.5 fill-blue-600 dark:fill-cyan-400" />
-            <span>Wash Pass Membership Club</span>
+            <span>{t('memberships.passClubBadge')}</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-950 dark:text-white tracking-tight leading-tight">
-            Membership Plans
+            {t('memberships.membershipPlansTitle')}
           </h1>
 
           <p className="text-base sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto font-medium">
-            Save more with a car wash membership.
+            {t('memberships.saveMoreSubtitle')}
           </p>
 
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
-            Enjoy guaranteed monthly wash allocations, member-only add-on discounts, and priority express lane access with transparent pricing.
+            {t('memberships.membershipsHeroDesc')}
           </p>
 
           {/* Billing Frequency Filter Toggle */}
@@ -181,7 +181,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                All Plans
+                {t('memberships.allPlans')}
               </button>
               <button
                 type="button"
@@ -192,7 +192,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Monthly Plans
+                {t('memberships.monthlyPlans')}
               </button>
               <button
                 type="button"
@@ -203,9 +203,9 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <span>Yearly Plans</span>
+                <span>{t('memberships.yearlyPlans')}</span>
                 <span className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-full ${billingFilter === 'yearly' ? 'bg-white text-blue-600' : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'}`}>
-                  Save ~17%
+                  {t('memberships.saveYearlyPercent')}
                 </span>
               </button>
             </div>
@@ -218,9 +218,9 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
         {displayedPlans.length === 0 ? (
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center space-y-3">
             <Car className="w-12 h-12 text-slate-400 mx-auto" />
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">No membership plans available</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('memberships.noPlansAvailable')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Check back soon or ask station attendant about upcoming membership packages.
+              {t('memberships.checkBackSoon')}
             </p>
           </div>
         ) : (
@@ -252,7 +252,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                         {plan.name}
                       </h3>
                       <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                        {plan.billingFrequency}
+                        {plan.billingFrequency === 'monthly' ? t('dashboard.monthlyPass') : t('dashboard.yearlyPass')}
                       </span>
                     </div>
 
@@ -267,11 +267,11 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                           {formatCurrency(plan.price)}
                         </span>
                         <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                          {isYearly ? '/ year' : '/ month'}
+                          {isYearly ? t('memberships.perYear') : t('memberships.perMonth')}
                         </span>
                       </div>
                       <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold block mt-1">
-                        {plan.includedWashes} {plan.includedServiceName}s {isYearly ? '/ month' : '/ month'}
+                        {plan.includedWashes} {plan.includedServiceName}s {isYearly ? t('memberships.perMonth') : t('memberships.perMonth')}
                       </span>
                     </div>
 
@@ -280,7 +280,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                       <li className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-cyan-400 shrink-0 mt-0.5" />
                         <span>
-                          <strong>{plan.includedWashes} Included Washes</strong> per month ({plan.includedServiceName})
+                          <strong>{t('dashboard.includedWashesDesc', { count: plan.includedWashes, frequency: isYearly ? t('dashboard.yearlyPass') : t('dashboard.monthlyPass') })}</strong> ({plan.includedServiceName})
                         </span>
                       </li>
                       {plan.addOnBenefitDescription && (
@@ -291,15 +291,15 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                       )}
                       <li className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-cyan-400 shrink-0 mt-0.5" />
-                        <span>Fast express lane drive-through</span>
+                        <span>{t('memberships.fastExpressLane')}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-cyan-400 shrink-0 mt-0.5" />
-                        <span>Online receipt tracking in customer portal</span>
+                        <span>{t('memberships.onlineReceiptTracking')}</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-cyan-400 shrink-0 mt-0.5" />
-                        <span>Cancel anytime with 1-click</span>
+                        <span>{t('memberships.cancelAnytime1Click')}</span>
                       </li>
                     </ul>
                   </div>
@@ -315,7 +315,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                           : 'bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white'
                       }`}
                     >
-                      <span>Join Membership</span>
+                      <span>{t('memberships.joinMembership')}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                     {plan.terms && (
@@ -334,13 +334,13 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
         <section className="mt-20 pt-16 border-t border-slate-200 dark:border-slate-800">
           <div className="text-center max-w-2xl mx-auto space-y-2 mb-12">
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-cyan-400">
-              Member Privileges
+              {t('memberships.memberPrivileges')}
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-slate-950 dark:text-white">
-              Why Join the Club?
+              {t('memberships.whyJoinTheClub')}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              The easiest way to keep your ride clean, polished, and protected every week.
+              {t('memberships.whyJoinSubtitle')}
             </p>
           </div>
 
@@ -349,9 +349,9 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
               <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-cyan-400 flex items-center justify-center font-bold">
                 <Zap className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">Guaranteed Savings</h3>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">{t('memberships.guaranteedSavings')}</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Save over 40% compared to purchasing single washes at the kiosk. Wash up to 4 times per month without paying per visit.
+                {t('memberships.guaranteedSavingsDesc')}
               </p>
             </div>
 
@@ -359,9 +359,9 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
               <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-cyan-400 flex items-center justify-center font-bold">
                 <Clock className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">Instant Lane Recognition</h3>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">{t('memberships.instantLaneRecognition')}</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Cashiers immediately identify your active membership and apply your included wash for $0.00 in under 10 seconds.
+                {t('memberships.instantLaneRecognitionDesc')}
               </p>
             </div>
 
@@ -369,9 +369,9 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
               <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-cyan-400 flex items-center justify-center font-bold">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">Zero Lock-In Contracts</h3>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">{t('memberships.zeroLockIn')}</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Enjoy complete freedom. You can easily cancel or pause your membership anytime directly inside your online customer dashboard.
+                {t('memberships.zeroLockInDesc')}
               </p>
             </div>
           </div>
@@ -388,13 +388,13 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
 
             <div className="text-center space-y-2">
               <h3 className="text-xl font-black text-slate-950 dark:text-white">
-                Account Required
+                {t('memberships.accountRequiredTitle')}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                Please log in or create a customer account to join a membership.
+                {t('memberships.accountRequiredDesc')}
               </p>
               <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300">
-                Selected Plan: <strong>{loginPromptPlan.name}</strong> ({formatCurrency(loginPromptPlan.price)} / {loginPromptPlan.billingFrequency})
+                {t('memberships.selectedPlan')}: <strong>{loginPromptPlan.name}</strong> ({formatCurrency(loginPromptPlan.price)} / {loginPromptPlan.billingFrequency === 'monthly' ? t('dashboard.monthlyPass') : t('dashboard.yearlyPass')})
               </div>
             </div>
 
@@ -408,7 +408,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                 className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Log In as Customer</span>
+                <span>{t('memberships.logInAsCustomer')}</span>
               </button>
 
               <button
@@ -420,7 +420,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                 className="w-full py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer border border-slate-200 dark:border-slate-700"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>Create New Account</span>
+                <span>{t('memberships.createNewAccount')}</span>
               </button>
 
               <button
@@ -428,7 +428,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
                 onClick={() => setLoginPromptPlan(null)}
                 className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 transition-colors cursor-pointer"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -438,21 +438,21 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
       {/* 6. Footer */}
       <footer className="bg-white dark:bg-slate-900 py-8 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} {businessInfo.businessName || 'Car Wash POS'}. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {businessInfo.businessName || 'Car Wash POS'}. {t('common.allRightsReserved')}</p>
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={onNavigateHome}
               className="hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
             >
-              Back to Home
+              {t('nav.backToHome')}
             </button>
             <button
               type="button"
               onClick={onNavigateAdminLogin}
               className="hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
             >
-              Staff Station Login
+              {t('memberships.staffStationLogin')}
             </button>
           </div>
         </div>

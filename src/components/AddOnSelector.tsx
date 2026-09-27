@@ -107,7 +107,7 @@ export const AddOnSelector: React.FC<AddOnSelectorProps> = ({
               </div>
 
               <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between">
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Extra</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('settings.addonExtra')}</span>
                 <span className="text-base font-bold text-slate-900 dark:text-white font-mono-numbers">
                   +{formatCurrency(addon.price)}
                 </span>

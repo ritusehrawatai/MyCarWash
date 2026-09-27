@@ -17,8 +17,9 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Customer, CustomerVehicle, Transaction, UserRole, CustomerMembership } from '../../types/pos';
-import { formatCurrency, formatPaymentMethodName } from '../../data/constants';
+import { formatCurrency, formatPaymentMethodName, formatLocalizedPaymentMethod } from '../../data/constants';
 import { formatVehicleDescription } from '../../data/customerData';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface CustomerProfileModalProps {
   customer: Customer | null;
@@ -49,6 +50,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
   onUpdateCustomer,
   userRole = 'admin',
 }) => {
+  const { t, language } = useLanguage();
   const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [editFirst, setEditFirst] = useState('');
   const [editLast, setEditLast] = useState('');
@@ -111,7 +113,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Customer Profile · {customerVehicles.length} vehicles · {customerTransactions.length} visits
+                {t('customers.profileSummary', { vehicles: customerVehicles.length, visits: customerTransactions.length })}
               </p>
             </div>
           </div>
@@ -131,7 +133,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
           <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Customer Information
+                {t('customers.customerInfoTitle')}
               </h4>
               {!isEditingInfo ? (
                 <button
@@ -140,7 +142,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                   className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 cursor-pointer"
                 >
                   <Edit2 className="w-3 h-3" />
-                  <span>Edit Profile</span>
+                  <span>{t('customers.editProfile')}</span>
                 </button>
               ) : (
                 <button
@@ -148,7 +150,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                   onClick={() => setIsEditingInfo(false)}
                   className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               )}
             </div>
@@ -156,26 +158,26 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
             {!isEditingInfo ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
-                  <span className="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold block">Phone</span>
+                  <span className="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold block">{t('customers.phoneCol')}</span>
                   <span className="font-semibold text-slate-900 dark:text-white font-mono-numbers">
-                    {customer.phone || 'No phone provided'}
+                    {customer.phone || t('customers.noPhoneProvided')}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold block">Email</span>
+                  <span className="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold block">{t('customers.emailCol')}</span>
                   <span className="font-semibold text-slate-900 dark:text-white">
-                    {customer.email || 'No email provided'}
+                    {customer.email || t('customers.noEmailProvided')}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold block">Total Spent</span>
+                  <span className="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold block">{t('customers.totalSpentCol')}</span>
                   <span className="font-extrabold text-blue-600 dark:text-blue-400 font-mono-numbers text-sm">
                     {formatCurrency(totalSpent)}
                   </span>
                 </div>
                 {customer.notes && (
                   <div className="sm:col-span-3 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
-                    <span className="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold block">Notes</span>
+                    <span className="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-bold block">{t('customers.notesLabel')}</span>
                     <p className="text-slate-700 dark:text-slate-300 text-xs italic">{customer.notes}</p>
                   </div>
                 )}
@@ -185,7 +187,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
-                      First Name
+                      {t('customers.firstNameLabel')}
                     </label>
                     <input
                       type="text"
@@ -196,7 +198,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
-                      Last Name
+                      {t('customers.lastNameLabel')}
                     </label>
                     <input
                       type="text"
@@ -210,7 +212,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
-                      Phone Number
+                      {t('customers.phoneLabel')}
                     </label>
                     <input
                       type="tel"
@@ -221,7 +223,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
-                      Email
+                      {t('customers.emailLabel')}
                     </label>
                     <input
                       type="email"
@@ -234,7 +236,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
 
                 <div>
                   <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
-                    Notes
+                    {t('customers.notesLabel')}
                   </label>
                   <input
                     type="text"
@@ -250,13 +252,13 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                     onClick={() => setIsEditingInfo(false)}
                     className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg cursor-pointer"
                   >
-                    Save Changes
+                    {t('common.save')}
                   </button>
                 </div>
               </form>
@@ -279,11 +281,11 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                           ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
                           : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                       }`}>
-                        {membership.status}
+                        {membership.status === 'active' ? t('common.active') : t('common.inactive')}
                       </span>
                     </h4>
                     <p className="text-[11px] text-blue-700 dark:text-cyan-300">
-                      Member ID: <span className="font-mono font-bold">{membership.id}</span> · {membership.billingFrequency === 'monthly' ? 'Monthly Pass' : 'Yearly Pass'}
+                      ID: <span className="font-mono font-bold">{membership.id}</span> · {membership.billingFrequency === 'monthly' ? t('pos.monthlyPass') : t('pos.yearlyPass')}
                     </p>
                   </div>
                 </div>
@@ -292,25 +294,25 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                   <span className="text-base font-black text-blue-900 dark:text-cyan-300 font-mono">
                     {membership.remainingWashes} / {membership.includedWashes}
                   </span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">washes left</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{t('pos.washesLeft')}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-blue-200/60 dark:border-blue-800/60 text-xs">
                 <div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Rate at Signup</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{t('pos.rateAtSignup')}</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
-                    {formatCurrency(membership.priceAtSignup)} / {membership.billingFrequency}
+                    {formatCurrency(membership.priceAtSignup)} / {membership.billingFrequency === 'monthly' ? t('memberships.monthly') : t('memberships.yearly')}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Next Renewal</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{t('pos.nextRenewal')}</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {new Date(membership.nextBillingDate).toLocaleDateString()}
+                    {new Date(membership.nextBillingDate).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')}
                   </span>
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Service Covered</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{t('pos.serviceCovered')}</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
                     {membership.includedServiceName}
                   </span>
@@ -324,7 +326,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Car className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>Saved Vehicles ({customerVehicles.length})</span>
+                <span>{t('customers.savedVehiclesCount', { count: customerVehicles.length })}</span>
               </h4>
 
               <button
@@ -333,13 +335,13 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                 className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ Add Vehicle</span>
+                <span>+ {t('pos.addVehicle')}</span>
               </button>
             </div>
 
             {customerVehicles.length === 0 ? (
               <div className="p-6 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-xs text-slate-500 dark:text-slate-400">
-                No vehicles registered for this customer yet.
+                {t('customers.noVehiclesRegistered')}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -361,7 +363,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                             {formatVehicleDescription(v)}
                           </span>
                           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 block">
-                            ID: {v.id} · Category: {v.vehicleTypeId === 'suv_truck' ? 'SUV/Truck' : 'Car'}
+                            ID: {v.id} · {v.vehicleTypeId === 'suv_truck' ? 'SUV/Truck' : 'Car'}
                           </span>
                           {v.notes && (
                             <p className="text-[11px] text-slate-600 dark:text-slate-400 italic mt-0.5">{v.notes}</p>
@@ -373,7 +375,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                             type="button"
                             onClick={() => onOpenEditVehicle(v)}
                             className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
-                            title="Edit Vehicle"
+                            title={t('customers.editVehicleTitle')}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -387,11 +389,11 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                             }`}
                             title={
                               isReferencedInTx
-                                ? 'Historical records protected. Toggle active/inactive status.'
-                                : 'Toggle active status'
+                                ? t('customers.toggleActiveRecordProtected')
+                                : t('customers.toggleActiveStatus')
                             }
                           >
-                            {v.active !== false ? 'Active' : 'Inactive'}
+                            {v.active !== false ? t('common.active') : t('common.inactive')}
                           </button>
                         </div>
                       </div>
@@ -406,24 +408,24 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
               <Receipt className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>Visit & Transaction History ({customerTransactions.length})</span>
+              <span>{t('customers.visitHistoryCount', { count: customerTransactions.length })}</span>
             </h4>
 
             {customerTransactions.length === 0 ? (
               <div className="p-6 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-xs text-slate-500 dark:text-slate-400">
-                No past transactions recorded for this customer yet.
+                {t('customers.noPastTransactions')}
               </div>
             ) : (
               <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px]">
-                      <th className="py-2.5 px-3">Receipt #</th>
-                      <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3">Vehicle</th>
-                      <th className="py-2.5 px-3">Service</th>
-                      <th className="py-2.5 px-3 text-right">Total</th>
-                      <th className="py-2.5 px-3">Payment</th>
+                      <th className="py-2.5 px-3">{t('transactions.receiptCol')}</th>
+                      <th className="py-2.5 px-3">{t('receipt.date')}</th>
+                      <th className="py-2.5 px-3">{t('receipt.vehicle')}</th>
+                      <th className="py-2.5 px-3">{t('receipt.service')}</th>
+                      <th className="py-2.5 px-3 text-right">{t('receipt.total')}</th>
+                      <th className="py-2.5 px-3">{t('transactions.paymentCol')}</th>
                       <th className="py-2.5 px-2"></th>
                     </tr>
                   </thead>
@@ -431,7 +433,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                     {customerTransactions.map((tx) => {
                       const isVoided = tx.status === 'voided';
                       const dateObj = new Date(tx.timestamp);
-                      const formattedDate = dateObj.toLocaleDateString('en-US', {
+                      const formattedDate = dateObj.toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
@@ -459,7 +461,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                             </span>
                           </td>
                           <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            {formatPaymentMethodName(tx.paymentMethod)}
+                            {formatLocalizedPaymentMethod(tx.paymentMethod, t)}
                           </td>
                           <td className="py-2.5 px-2 text-right">
                             <ChevronRight className="w-3.5 h-3.5 text-slate-400 inline" />
@@ -481,10 +483,11 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
             onClick={onClose}
             className="px-5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>
     </div>
   );
 };
+

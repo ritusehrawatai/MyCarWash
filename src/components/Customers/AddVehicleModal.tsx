@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Car, CheckCircle2 } from 'lucide-react';
 import { CustomerVehicle, POSVehicleType } from '../../types/pos';
 import { generateVehicleId } from '../../data/customerData';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface AddVehicleModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
   existingVehicles,
   vehicleToEdit,
 }) => {
+  const { t } = useLanguage();
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [year, setYear] = useState('');
@@ -66,7 +68,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
     // At least make or license plate is required
     if (!trimmedMake && !trimmedPlate) {
-      setError('Please provide at least a Make or License Plate for this vehicle.');
+      setError(t('customers.makeOrPlateRequired'));
       return;
     }
 
@@ -115,10 +117,10 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base">
-                {vehicleToEdit ? 'Edit Vehicle' : 'Register Vehicle'}
+                {vehicleToEdit ? t('customers.editVehicleTitle') : t('customers.registerVehicleTitle')}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {customerName ? `Linked to ${customerName}` : 'Attach vehicle details'}
+                {customerName ? t('customers.linkedToCustomer', { name: customerName }) : t('customers.attachVehicleDetails')}
               </p>
             </div>
           </div>
@@ -143,7 +145,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
           {/* Vehicle Category (Tied to pricing surcharge) */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Vehicle Type / Category <span className="text-rose-500">*</span>
+              {t('customers.categoryLabel')} <span className="text-rose-500">*</span>
             </label>
             <select
               value={vehicleTypeId}
@@ -152,20 +154,17 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
             >
               {vehicleTypes.map((vt) => (
                 <option key={vt.id} value={vt.id}>
-                  {vt.name} {vt.surcharge > 0 ? `(+$${vt.surcharge.toFixed(2)} surcharge)` : '(Standard)'}
+                  {vt.name} {vt.surcharge > 0 ? `(+$${vt.surcharge.toFixed(2)} ${t('pos.surcharge').toLowerCase()})` : `(${t('transactions.standardCategory').replace('$0.00 ', '').replace(/[()]/g, '')})`}
                 </option>
               ))}
             </select>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Determines POS pricing surcharge category.
-            </p>
           </div>
 
           {/* Row: Make & Model */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Make <span className="text-rose-500">*</span>
+                {t('customers.makeLabel')} <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -178,7 +177,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Model
+                {t('customers.modelLabel')}
               </label>
               <input
                 type="text"
@@ -194,7 +193,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Year
+                {t('customers.yearLabel')}
               </label>
               <input
                 type="text"
@@ -207,7 +206,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Color
+                {t('customers.colorLabel')}
               </label>
               <input
                 type="text"
@@ -222,7 +221,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
           {/* License Plate */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              License Plate <span className="text-slate-500 dark:text-slate-400 font-normal">(Helpful for lane lookup)</span>
+              {t('customers.plateLabel')}
             </label>
             <input
               type="text"
@@ -236,7 +235,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
           {/* Notes */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Vehicle Notes <span className="text-slate-400 dark:text-slate-500 font-normal">(Optional)</span>
+              {t('customers.notesLabel')} <span className="text-slate-400 dark:text-slate-500 font-normal">({t('common.optional')})</span>
             </label>
             <input
               type="text"
@@ -254,14 +253,14 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{vehicleToEdit ? 'Save Changes' : 'Save Vehicle'}</span>
+              <span>{vehicleToEdit ? t('common.save') : t('customers.saveVehicleButton')}</span>
             </button>
           </div>
         </form>
