@@ -26,6 +26,7 @@ import { CustomerDashboardPage } from './components/CustomerPortal/CustomerDashb
 import { MembershipsPage } from './components/Public/MembershipsPage';
 import { MembershipCheckoutModal } from './components/Memberships/MembershipCheckoutModal';
 import { MembershipManagementSection } from './components/Admin/MembershipManagementSection';
+import { useLanguage } from './context/LanguageContext';
 import {
   POSServiceItem,
   POSVehicleType,

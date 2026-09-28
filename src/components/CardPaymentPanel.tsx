@@ -69,7 +69,11 @@ export const CardPaymentPanel: React.FC<CardPaymentPanelProps> = ({
     setIsProcessing(true);
 
     try {
-      const result = await processCardPayment(amountDue, cardType, {
+      const normalizedCardType = (cardType === 'Debit Card' || cardType.toLowerCase().includes('debit'))
+        ? 'Debit Card'
+        : 'Credit Card';
+
+      const result = await processCardPayment(amountDue, normalizedCardType, {
         cardNumber: testCardNumber,
         expiryDate: testExpiry,
         cvv: testCvv,

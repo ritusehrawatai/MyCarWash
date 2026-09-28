@@ -13,6 +13,7 @@ import { MembershipPlan, Customer, AuthUser, CustomerMembership, Transaction } f
 import { formatCurrency, generateReceiptNumber } from '../../data/constants';
 import { calculateNextBillingDate, generateMembershipId } from '../../data/membershipData';
 import { processCardPayment } from '../../services/paymentService';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface MembershipCheckoutModalProps {
   plan: MembershipPlan | null;
@@ -33,6 +34,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
   onConfirmSuccess,
   existingMemberships,
 }) => {
+  const { t, formatDate } = useLanguage();
   // Test Card state (Transient in memory only, NEVER stored)
   const [testCardNumber, setTestCardNumber] = useState('4000 1234 5678 9010');
   const [testExpiry, setTestExpiry] = useState('12/28');
@@ -44,20 +46,20 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
 
   const customerName = customer
     ? `${customer.firstName} ${customer.lastName}`
-    : user?.name || 'Valued Customer';
+    : user?.name || t('pos.guestCustomer');
   const customerId = customer?.id || user?.customerId || 'CUS-GUEST';
 
   const startDate = new Date();
   const nextBillingDateStr = calculateNextBillingDate(startDate.toISOString(), plan.billingFrequency);
   const nextBillingDate = new Date(nextBillingDateStr);
 
-  const formattedStartDate = startDate.toLocaleDateString('en-US', {
+  const formattedStartDate = formatDate(startDate, {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
   });
 
-  const formattedNextBillingDate = nextBillingDate.toLocaleDateString('en-US', {
+  const formattedNextBillingDate = formatDate(nextBillingDate, {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -68,7 +70,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
     setErrorMessage(null);
 
     if (!testCardNumber.trim() || !testExpiry.trim() || !testCvv.trim()) {
-      setErrorMessage('Please enter valid test card details.');
+      setErrorMessage(t('memberships.testCardDetailsRequired'));
       return;
     }
 
@@ -86,7 +88,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
       setIsProcessing(false);
 
       if (!paymentResult.success) {
-        setErrorMessage(paymentResult.errorMessage || 'Demo payment failed.');
+        setErrorMessage(paymentResult.errorMessage || t('memberships.demoPaymentFailed'));
         return;
       }
 
@@ -132,12 +134,12 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
         billingPeriod: plan.billingFrequency === 'monthly' ? 'Monthly' : 'Annual',
         service: {
           id: plan.includedServiceId,
-          name: `${plan.name} (${plan.billingFrequency === 'monthly' ? 'Monthly' : 'Yearly'})`,
+          name: `${plan.name} (${plan.billingFrequency === 'monthly' ? (t('admin.metricMonthlyMembers')) : (t('admin.metricYearlyMembers'))})`,
           price: plan.price,
         },
         vehicleType: {
           id: 'membership',
-          name: 'Membership Pass',
+          name: t('receipt.memberPass'),
           surcharge: 0,
         },
         addOns: [],
@@ -157,7 +159,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
       onConfirmSuccess(newMembership, membershipTransaction);
     } catch {
       setIsProcessing(false);
-      setErrorMessage('Unexpected error during payment processing. Please try again.');
+      setErrorMessage(t('memberships.unexpectedError'));
     }
   };
 
@@ -172,10 +174,10 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
             </div>
             <div>
               <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                Confirm Membership
+                {t('memberships.confirmMembership')}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Review terms and activate your wash pass
+                {t('memberships.reviewTerms')}
               </p>
             </div>
           </div>
@@ -196,7 +198,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-cyan-400 block">
-                  Selected Plan
+                  {t('memberships.selectedPlan')}
                 </span>
                 <h3 className="text-base font-extrabold text-slate-950 dark:text-white">
                   {plan.name}
@@ -207,37 +209,41 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
                   {formatCurrency(plan.price)}
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  /{plan.billingFrequency}
+                  {plan.billingFrequency === 'monthly' ? t('memberships.perMonth') : t('memberships.perYear')}
                 </span>
               </div>
             </div>
 
             <div className="pt-2.5 border-t border-blue-200/60 dark:border-blue-800/60 text-xs space-y-1.5 text-slate-700 dark:text-slate-300">
               <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Customer Name:</span>
+                <span className="text-slate-500 dark:text-slate-400">{t('memberships.customerName')}:</span>
                 <span className="font-semibold text-slate-900 dark:text-white">{customerName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Billing Frequency:</span>
-                <span className="font-semibold capitalize text-slate-900 dark:text-white">{plan.billingFrequency}</span>
+                <span className="text-slate-500 dark:text-slate-400">{t('memberships.billingFrequency')}:</span>
+                <span className="font-semibold capitalize text-slate-900 dark:text-white">
+                  {plan.billingFrequency === 'monthly' ? t('memberships.billingMonthly') : t('memberships.billingYearly')}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Start Date:</span>
+                <span className="text-slate-500 dark:text-slate-400">{t('memberships.startDate')}:</span>
                 <span>{formattedStartDate}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Next Billing Date:</span>
+                <span className="text-slate-500 dark:text-slate-400">{t('memberships.nextBillingDate')}:</span>
                 <span className="font-bold text-blue-700 dark:text-cyan-400">{formattedNextBillingDate}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Included Washes:</span>
+                <span className="text-slate-500 dark:text-slate-400">{t('memberships.includedWashes')}:</span>
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {plan.includedWashes} {plan.includedServiceName}s / month
+                  {plan.billingFrequency === 'monthly'
+                    ? t('memberships.washesPerMonth', { count: plan.includedWashes, service: plan.includedServiceName })
+                    : t('memberships.washesPerYear', { count: plan.includedWashes, service: plan.includedServiceName })}
                 </span>
               </div>
               {plan.addOnBenefitDescription && (
                 <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Add-on Benefit:</span>
+                  <span className="text-slate-500 dark:text-slate-400">{t('memberships.addOnBenefit')}:</span>
                   <span className="font-medium text-emerald-600 dark:text-emerald-400">{plan.addOnBenefitDescription}</span>
                 </div>
               )}
@@ -248,9 +254,9 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
           <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl text-amber-900 dark:text-amber-300 text-xs flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold">DEMO PAYMENT:</span>
+              <span className="font-bold">{t('memberships.demoPaymentTitle')}:</span>
               <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
-                This is a simulation checkout. Do not enter real credit or debit card details.
+                {t('memberships.demoPaymentNoticeDetailed')}
               </p>
             </div>
           </div>
@@ -265,7 +271,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
           <form onSubmit={handleProcessCheckout} className="space-y-3.5">
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Test Card Number
+                {t('memberships.testCardNumber')}
               </label>
               <div className="relative">
                 <input
@@ -284,7 +290,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Expiration
+                  {t('memberships.expiration')}
                 </label>
                 <input
                   type="text"
@@ -298,7 +304,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  CVV
+                  {t('memberships.cvv')}
                 </label>
                 <input
                   type="text"
@@ -314,7 +320,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
 
             {/* Terms Preview */}
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed pt-1">
-              By confirming, you agree to the Membership terms. You can cancel your membership anytime in your customer account.
+              {t('memberships.termsNotice')}
             </p>
 
             {/* Buttons */}
@@ -327,12 +333,12 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
                 {isProcessing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Processing payment...</span>
+                    <span>{t('memberships.processingPayment')}</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Confirm Membership — {formatCurrency(plan.price)}</span>
+                    <span>{t('memberships.confirmMembershipButton', { price: formatCurrency(plan.price) })}</span>
                   </>
                 )}
               </button>
@@ -343,7 +349,7 @@ export const MembershipCheckoutModal: React.FC<MembershipCheckoutModalProps> = (
                 onClick={onClose}
                 className="w-full sm:w-auto py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </form>

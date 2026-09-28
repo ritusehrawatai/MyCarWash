@@ -56,7 +56,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
   onCancelMembership,
   onLogout,
 }) => {
-  const { t, formatDate, formatDateTime } = useLanguage();
+  const { t, formatDate, formatDateTime, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'membership' | 'vehicles' | 'history'>('overview');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
