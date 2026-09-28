@@ -20,6 +20,7 @@ import { formatCurrency } from '../../data/constants';
 import { ThemeToggle } from '../ThemeToggle';
 import { LanguageToggle } from '../LanguageToggle';
 import { useLanguage } from '../../context/LanguageContext';
+import { HeroSlideshow } from './HeroSlideshow';
 
 interface HomePageProps {
   services: POSServiceItem[];
@@ -122,32 +123,33 @@ export const HomePage: React.FC<HomePageProps> = ({
       </header>
 
       {/* 2. Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 sm:pt-16 sm:pb-28 lg:pt-24 lg:pb-32 bg-gradient-to-b from-blue-50/60 via-slate-50 to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-200">
+      <section className="relative overflow-hidden pt-8 pb-14 sm:pt-12 sm:pb-18 lg:pt-14 lg:pb-22 bg-gradient-to-b from-blue-50/60 via-slate-50 to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-200">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-blue-500/10 dark:bg-blue-600/10 blur-3xl pointer-events-none rounded-full" />
         <div className="absolute top-1/3 right-10 w-80 h-80 bg-cyan-500/10 blur-3xl pointer-events-none rounded-full" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-12 items-center">
+            {/* Left Content - Generous 7-column allocation so headline never overflows */}
+            <div className="lg:col-span-7 xl:col-span-7 space-y-5 text-center lg:text-left min-w-0">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-100 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-cyan-400 text-xs font-bold tracking-wide uppercase">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{t('home.heroBadge')}</span>
               </div>
 
-              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-950 dark:text-white tracking-tight leading-none uppercase">
-                {t('home.heroTitleLine1')} <br />
+              {/* Headline - Guaranteed single horizontal line on desktop without overflowing into slideshow */}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[clamp(1.15rem,1.75vw,2.05rem)] font-black text-slate-950 dark:text-white tracking-tight uppercase leading-tight whitespace-normal lg:whitespace-nowrap">
+                <span>{t('home.heroTitleLine1')} </span>
                 <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-600 dark:from-cyan-400 dark:via-blue-400 dark:to-indigo-300 bg-clip-text text-transparent">
                   {t('home.heroTitleLine2')}
                 </span>
               </h1>
 
-              <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 {t('home.heroSubtitle')}
               </p>
 
               {/* Call-to-actions */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 flex-wrap">
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 flex-wrap">
                 <button
                   type="button"
                   onClick={onNavigateSignUp}
@@ -161,7 +163,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <button
                     type="button"
                     onClick={onNavigateMemberships}
-                    className="w-full sm:w-auto px-7 py-3.5 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-cyan-300 font-extrabold text-sm sm:text-base rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-3.5 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-cyan-300 font-extrabold text-sm sm:text-base rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4 text-cyan-500" />
                     <span>{t('home.ctaMemberships')}</span>
@@ -170,7 +172,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                 <a
                   href="#services"
-                  className="w-full sm:w-auto px-6 py-3.5 bg-white dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-700/90 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white font-bold text-sm sm:text-base rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-5 py-3.5 bg-white dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-700/90 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white font-bold text-sm sm:text-base rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2"
                 >
                   <span>{t('home.ctaServices')}</span>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -178,7 +180,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
 
               {/* Feature Highlights */}
-              <div className="pt-6 grid grid-cols-3 gap-3 border-t border-slate-200 dark:border-slate-800/80 text-left">
+              <div className="pt-5 grid grid-cols-3 gap-3 border-t border-slate-200 dark:border-slate-800/80 text-left">
                 <div>
                   <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white block">{t('home.expressLane3Min')}</span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('home.expressLaneLabel')}</span>
@@ -194,35 +196,9 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
             </div>
 
-            {/* Right Visual Image Card (Clean glossy vehicle) */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/60 shadow-2xl shadow-blue-900/20 group">
-                <img
-                  src="https://images.unsplash.com/photo-1601362840469-51e4d8d58785?auto=format&fit=crop&w=1000&q=80"
-                  alt="Shiny pristine luxury vehicle with glossy finish"
-                  className="w-full h-80 sm:h-96 object-cover group-hover:scale-105 transition-transform duration-700 opacity-95"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-
-                {/* Floating Overlay Badge */}
-                <div className="absolute bottom-5 left-5 right-5 p-4 rounded-2xl bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-700/60 flex items-center justify-between shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-cyan-500/20 text-blue-600 dark:text-cyan-400 flex items-center justify-center font-bold">
-                      <Droplets className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                        {t('home.ceramicGlossShield')}
-                      </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.tripleFoamPolish')}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-amber-500 dark:text-amber-400 text-xs font-bold gap-1">
-                    <Star className="w-4 h-4 fill-amber-400 text-amber-500 dark:text-amber-400" />
-                    <span>5.0</span>
-                  </div>
-                </div>
-              </div>
+            {/* Right Visual Hero Area: Wide Horizontal 16:9 Slideshow - strictly isolated in 5 columns */}
+            <div className="lg:col-span-5 xl:col-span-5 relative w-full min-w-0">
+              <HeroSlideshow />
             </div>
           </div>
         </div>
