@@ -24,6 +24,7 @@ import { CustomerLoginPage } from './components/Public/CustomerLoginPage';
 import { AdminLoginPage } from './components/Public/AdminLoginPage';
 import { CustomerDashboardPage } from './components/CustomerPortal/CustomerDashboardPage';
 import { MembershipsPage } from './components/Public/MembershipsPage';
+import { EnquiryPage } from './components/Public/EnquiryPage';
 import { MembershipCheckoutModal } from './components/Memberships/MembershipCheckoutModal';
 import { MembershipManagementSection } from './components/Admin/MembershipManagementSection';
 import { useLanguage } from './context/LanguageContext';
@@ -73,7 +74,7 @@ import {
 const STORAGE_TRANSACTIONS_KEY = 'my_car_wash_transactions';
 const STORAGE_SETTINGS_KEY = 'my_car_wash_settings';
 
-export type AppView = 'public_home' | 'customer_signup' | 'customer_login' | 'admin_login' | 'customer_dashboard' | 'memberships' | 'app';
+export type AppView = 'public_home' | 'customer_signup' | 'customer_login' | 'admin_login' | 'customer_dashboard' | 'memberships' | 'enquiry' | 'app';
 
 export default function App() {
   // Accounts Collection State
@@ -820,11 +821,26 @@ export default function App() {
         onNavigateCustomerLogin={() => setCurrentView('customer_login')}
         onNavigateAdminLogin={() => setCurrentView('admin_login')}
         onNavigateMemberships={() => setCurrentView('memberships')}
+        onNavigateEnquiry={() => setCurrentView('enquiry')}
       />
     );
   }
 
-  // 2. PUBLIC MEMBERSHIP PLANS PAGE
+  // 2. PUBLIC ENQUIRY PAGE
+  if (currentView === 'enquiry') {
+    return (
+      <EnquiryPage
+        businessInfo={settings.business}
+        currentUser={currentUser}
+        onNavigateHome={() => setCurrentView('public_home')}
+        onNavigateSignUp={() => setCurrentView('customer_signup')}
+        onNavigateCustomerLogin={() => setCurrentView('customer_login')}
+        onNavigateMemberships={() => setCurrentView('memberships')}
+      />
+    );
+  }
+
+  // 3. PUBLIC MEMBERSHIP PLANS PAGE
   if (currentView === 'memberships') {
     return (
       <>

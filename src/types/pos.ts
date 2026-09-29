@@ -29,6 +29,7 @@ export interface BusinessInfo {
   phone: string;
   email: string;
   receiptFooter: string;
+  enquiryEndpointUrl?: string;
 }
 
 export type BillingFrequency = 'monthly' | 'yearly';

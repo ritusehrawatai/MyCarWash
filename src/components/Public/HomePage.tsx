@@ -14,6 +14,7 @@ import {
   PhoneCall,
   MapPin,
   Lock,
+  Mail,
 } from 'lucide-react';
 import { POSServiceItem, BusinessInfo } from '../../types/pos';
 import { formatCurrency } from '../../data/constants';
@@ -29,6 +30,7 @@ interface HomePageProps {
   onNavigateCustomerLogin: () => void;
   onNavigateAdminLogin: () => void;
   onNavigateMemberships?: () => void;
+  onNavigateEnquiry?: () => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -38,6 +40,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onNavigateCustomerLogin,
   onNavigateAdminLogin,
   onNavigateMemberships,
+  onNavigateEnquiry,
 }) => {
   const { t } = useLanguage();
   const washPackages = services.filter((s) => s.type === 'wash' && s.active);
@@ -413,7 +416,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
 
             {/* Contact details */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <span className="font-bold uppercase tracking-wider text-slate-300 block">{t('home.contactAndVisit')}</span>
               <p className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-cyan-400 shrink-0" />
@@ -423,6 +426,28 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <PhoneCall className="w-4 h-4 text-cyan-400 shrink-0" />
                 <span>{businessInfo.phone || '(555) 123-4567'}</span>
               </p>
+              <p className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>{t('home.open7Days')}</span>
+              </p>
+
+              {/* Have a Question? Send an Enquiry Option */}
+              {onNavigateEnquiry && (
+                <div className="pt-2">
+                  <p className="text-[11px] text-slate-400 font-medium mb-1.5">
+                    {t('enquiry.haveQuestion')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onNavigateEnquiry}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs shadow-md shadow-blue-500/20 hover:shadow-cyan-500/30 transition-all cursor-pointer group"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-white" />
+                    <span>{t('enquiry.sendEnquiry')}</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Portal Links (Staff vs Customer) */}

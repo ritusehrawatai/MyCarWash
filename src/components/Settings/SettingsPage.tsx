@@ -72,6 +72,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [phone, setPhone] = useState(settings.business.phone);
   const [email, setEmail] = useState(settings.business.email);
   const [receiptFooter, setReceiptFooter] = useState(settings.business.receiptFooter);
+  const [enquiryEndpointUrl, setEnquiryEndpointUrl] = useState(settings.business.enquiryEndpointUrl || '');
   const [businessSuccessMsg, setBusinessSuccessMsg] = useState<string | null>(null);
   const [businessErrorMsg, setBusinessErrorMsg] = useState<string | null>(null);
 
@@ -131,7 +132,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       phone: phone.trim(),
       email: email.trim(),
       receiptFooter: receiptFooter.trim(),
+      enquiryEndpointUrl: enquiryEndpointUrl.trim(),
     };
+
+    try {
+      localStorage.setItem('carwash_enquiry_endpoint', enquiryEndpointUrl.trim());
+    } catch {
+      // Ignore
+    }
 
     onSaveBusinessInfo(updatedInfo);
     setBusinessSuccessMsg(t('settings.futureReceiptsNote'));
@@ -447,6 +455,23 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   />
                   <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1">
                     {t('settings.receiptFooterHelp')}
+                  </p>
+                </div>
+
+                {/* Google Apps Script Web App URL for Enquiries */}
+                <div className="sm:col-span-2 pt-2 border-t border-slate-200/80 dark:border-slate-800">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                    {t('enquiry.webAppUrlLabel')}
+                  </label>
+                  <input
+                    type="url"
+                    value={enquiryEndpointUrl}
+                    onChange={(e) => setEnquiryEndpointUrl(e.target.value)}
+                    placeholder={t('enquiry.webAppUrlPlaceholder')}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+                    {t('enquiry.endpointSettingsHelp')}
                   </p>
                 </div>
               </div>
