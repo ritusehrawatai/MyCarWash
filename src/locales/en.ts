@@ -79,6 +79,9 @@ export const en = {
     login: 'Log In',
     logout: 'Log Out',
     backToHome: 'Back to Home',
+    more: 'More',
+    adminMenu: 'Admin Menu',
+    userAccount: 'User Account',
   },
   auth: {
     customerSignIn: 'Customer Sign In',

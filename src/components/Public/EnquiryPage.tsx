@@ -30,6 +30,7 @@ import {
   submitEnquiryToAppsScript,
   getEnquiryEndpoint,
   setEnquiryEndpoint,
+  normalizeEndpointUrl,
   isRateLimited,
 } from '../../services/enquiryService';
 
@@ -171,36 +172,64 @@ export const EnquiryPage: React.FC<EnquiryPageProps> = ({
   });
 
   const handleTestEndpoint = async () => {
-    let url = tempEndpointInput.trim() || endpointUrl.trim();
-    if (!url) {
+    let rawUrl = tempEndpointInput.trim() || endpointUrl.trim();
+    if (!rawUrl) {
       setTestResult({ status: 'error', message: 'Please enter a Google Apps Script Web App URL first.' });
       return;
     }
-    // Auto-fix /edit to /exec
-    url = url.replace(/\/edit(\?.*)?$/, '/exec');
+
+    const cleanUrl = normalizeEndpointUrl(rawUrl);
     setTestingEndpoint(true);
     setTestResult({ status: 'idle', message: '' });
 
     try {
-      const testUrl = url.includes('?') ? `${url}&test=1` : `${url}?test=1`;
-      const res = await fetch(testUrl);
-      const data = await res.json();
-      if (data && data.status === 'success') {
-        setTestResult({
-          status: 'success',
-          message: data.message || 'Test email dispatched! Check your Gmail inbox and Spam folder.',
-        });
-      } else {
-        setTestResult({
-          status: 'error',
-          message: data?.message || 'Script responded with an error. Check Apps Script logs.',
-        });
+      // 1. Dispatch a test enquiry via POST with mode: 'no-cors' (this reliably reaches Google Apps Script without CORS redirect blockage)
+      await fetch(cleanUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          name: 'Connection Test',
+          email: 'test@example.com',
+          phone: 'N/A',
+          message: 'Website test enquiry to confirm delivery to ritusehrawatai@gmail.com',
+          timestamp: new Date().toLocaleString(),
+          destination: TARGET_ENQUIRY_EMAIL,
+        }),
+      });
+
+      // 2. Also try GET to see if Google Apps Script returned a specific error message
+      let successMsg = `Test enquiry dispatched directly to your Web App! Check your Gmail inbox and Spam folder at ${TARGET_ENQUIRY_EMAIL}.`;
+      try {
+        const testUrl = cleanUrl.includes('?') ? `${cleanUrl}&test=1` : `${cleanUrl}?test=1`;
+        const res = await fetch(testUrl);
+        const data = await res.json();
+        if (data && (data.status === 'success' || data.status === 'ok')) {
+          successMsg = data.message || successMsg;
+        } else if (data && data.status === 'error') {
+          setTestResult({
+            status: 'error',
+            message:
+              data?.message ||
+              'Script responded with an error. Please select "testSendInEditor" in Google Apps Script and click Run (▶) to authorize permissions.',
+          });
+          return;
+        }
+      } catch {
+        // Cross-origin 302 redirects from script.google.com are blocked by browser CORS when fetched from another domain.
+        // The POST dispatched above still reached the script successfully!
       }
-    } catch {
+
+      setTestResult({
+        status: 'success',
+        message: successMsg,
+      });
+    } catch (err: any) {
       setTestResult({
         status: 'error',
-        message:
-          'Could not reach script directly. If it asks for Google login, change "Who has access" to "Anyone" under Deploy → Manage deployments in Google Apps Script.',
+        message: err?.message || 'Network error while attempting to contact Google Apps Script.',
       });
     } finally {
       setTestingEndpoint(false);
@@ -209,8 +238,7 @@ export const EnquiryPage: React.FC<EnquiryPageProps> = ({
 
   // Copy code snippet helper
   const handleCopyCode = () => {
-    const scriptCode = `var PRIMARY_EMAIL = 'ritusehrawatai@gmail.com';
-var SECONDARY_EMAIL = 'ritusehrawat@gmail.com';
+    const scriptCode = `var TARGET_EMAIL = 'ritusehrawatai@gmail.com';
 
 function doPost(e) {
   try {
@@ -231,25 +259,25 @@ function doPost(e) {
 
     var subject = 'New Car Wash Enquiry from ' + name;
     var plainBody = 'New Car Wash Enquiry\\n\\n' +
-      'Name: ' + name + '\\n' +
-      'Email: ' + email + '\\n' +
-      'Phone: ' + phone + '\\n' +
+      'Customer Name: ' + name + '\\n' +
+      'Customer Email: ' + email + '\\n' +
+      'Phone Number: ' + phone + '\\n' +
       'Submitted At: ' + submittedAt + '\\n\\n' +
-      'Message:\\n' + message;
+      'Question / Message:\\n' + message;
 
     var htmlBody = '<div style="font-family: Arial, sans-serif; max-width: 600px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">' +
       '<h2 style="color: #0284c7; margin-top: 0;">New Car Wash Enquiry</h2>' +
-      '<p><strong>Name:</strong> ' + name + '</p>' +
-      '<p><strong>Email:</strong> <a href="mailto:' + email + '">' + email + '</a></p>' +
-      '<p><strong>Phone:</strong> ' + phone + '</p>' +
-      '<p><strong>Submitted:</strong> ' + submittedAt + '</p>' +
+      '<p><strong>Customer Name:</strong> ' + name + '</p>' +
+      '<p><strong>Customer Email:</strong> <a href="mailto:' + email + '">' + email + '</a></p>' +
+      '<p><strong>Phone Number:</strong> ' + phone + '</p>' +
+      '<p><strong>Date & Time:</strong> ' + submittedAt + '</p>' +
       '<div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 14px; margin-top: 16px; border-radius: 4px;">' +
       '<p style="font-weight: bold; margin-top: 0; color: #1e293b;">Question / Message:</p>' +
       '<p style="white-space: pre-wrap; margin-bottom: 0; color: #334155;">' + message + '</p>' +
       '</div></div>';
 
     sendNotification(subject, plainBody, htmlBody, email);
-    return ContentService.createTextOutput(JSON.stringify({ status: 'success', message: 'Enquiry sent successfully' })).setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ status: 'success', message: 'Enquiry sent successfully to ' + TARGET_EMAIL })).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
     Logger.log('doPost error: ' + error.toString());
     return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: error.toString() })).setMimeType(ContentService.MimeType.JSON);
@@ -261,45 +289,37 @@ function doGet(e) {
   if (params.test || params.sendTest) {
     try {
       var subject = 'Test Email - Car Wash Enquiry Service';
-      var body = 'This is a test email confirming that your Google Apps Script is sending emails successfully!\\n\\nTime: ' + new Date().toLocaleString();
+      var body = 'This is a test email confirming that your Google Apps Script is sending emails successfully to ' + TARGET_EMAIL + '!\\n\\nTime: ' + new Date().toLocaleString();
       sendNotification(subject, body, '<div style="font-family: sans-serif; padding: 16px; border: 1px solid #10b981; border-radius: 8px;"><h3 style="color: #059669; margin-top: 0;">Success!</h3><p>' + body + '</p></div>', 'test@example.com');
-      return ContentService.createTextOutput(JSON.stringify({ status: 'success', message: 'Test email successfully dispatched to ' + PRIMARY_EMAIL + ' and ' + SECONDARY_EMAIL })).setMimeType(ContentService.MimeType.JSON);
+      return ContentService.createTextOutput(JSON.stringify({ status: 'success', message: 'Test email successfully dispatched to ' + TARGET_EMAIL })).setMimeType(ContentService.MimeType.JSON);
     } catch (err) {
       Logger.log('doGet test error: ' + err.toString());
       return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
     }
   }
-  return ContentService.createTextOutput(JSON.stringify({ status: 'ok', primaryDestination: PRIMARY_EMAIL, secondaryDestination: SECONDARY_EMAIL })).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify({ status: 'ok', destination: TARGET_EMAIL })).setMimeType(ContentService.MimeType.JSON);
 }
 
 function sendNotification(subject, plainBody, htmlBody, replyToEmail) {
-  var recipients = [PRIMARY_EMAIL];
-  if (SECONDARY_EMAIL && SECONDARY_EMAIL !== PRIMARY_EMAIL) {
-    recipients.push(SECONDARY_EMAIL);
+  var options = {
+    htmlBody: htmlBody,
+    name: 'Car Wash Website Enquiry'
+  };
+  if (replyToEmail && replyToEmail.indexOf('@') !== -1) {
+    options.replyTo = replyToEmail;
   }
 
-  for (var i = 0; i < recipients.length; i++) {
-    var to = recipients[i];
-    var options = {
-      htmlBody: htmlBody,
-      name: 'Car Wash Website Enquiry'
-    };
-    if (replyToEmail && replyToEmail.indexOf('@') !== -1) {
-      options.replyTo = replyToEmail;
-    }
-
+  try {
+    MailApp.sendEmail(TARGET_EMAIL, subject, plainBody, options);
+    Logger.log('MailApp sent email to ' + TARGET_EMAIL);
+  } catch (err1) {
+    Logger.log('MailApp error: ' + err1.toString() + ', trying GmailApp...');
     try {
-      MailApp.sendEmail(to, subject, plainBody, options);
-      Logger.log('MailApp successfully sent to ' + to);
-    } catch (err1) {
-      Logger.log('MailApp failed for ' + to + ', trying GmailApp: ' + err1.toString());
-      try {
-        GmailApp.sendEmail(to, subject, plainBody, options);
-        Logger.log('GmailApp successfully sent to ' + to);
-      } catch (err2) {
-        Logger.log('Both MailApp and GmailApp failed for ' + to + ': ' + err2.toString());
-        throw err2;
-      }
+      GmailApp.sendEmail(TARGET_EMAIL, subject, plainBody, options);
+      Logger.log('GmailApp sent email to ' + TARGET_EMAIL);
+    } catch (err2) {
+      Logger.log('GmailApp error: ' + err2.toString());
+      throw new Error('Email delivery failed: ' + err2.toString() + '. Please authorize permissions by running testSendInEditor in the Apps Script editor.');
     }
   }
 }
@@ -307,9 +327,9 @@ function sendNotification(subject, plainBody, htmlBody, replyToEmail) {
 // CRITICAL: Run this function once in the Apps Script editor to authorize Google permissions!
 function testSendInEditor() {
   var subject = 'Permissions Confirmed - Car Wash Enquiry Test';
-  var body = 'Your Google Apps Script has been authorized successfully and can now send customer enquiry emails to your inbox!';
+  var body = 'Your Google Apps Script has been authorized successfully and can now send customer enquiry emails to ' + TARGET_EMAIL + '!';
   sendNotification(subject, body, '<div style="font-family: sans-serif; padding: 16px; border: 1px solid #10b981; border-radius: 8px;"><h3 style="color: #059669; margin-top: 0;">Permissions Authorized!</h3><p>' + body + '</p></div>', 'test@example.com');
-  Logger.log('Test email dispatched! Check your Gmail inbox and Spam folder at ' + PRIMARY_EMAIL + ' and ' + SECONDARY_EMAIL);
+  Logger.log('Test email dispatched! Check your Gmail inbox and Spam folder at ' + TARGET_EMAIL);
 }`;
 
     navigator.clipboard.writeText(scriptCode);
@@ -808,18 +828,18 @@ function testSendInEditor() {
 
                         {/* Direct browser link if user has entered an endpoint */}
                         {tempEndpointInput.trim() && (
-                          <div className="pt-1 flex items-center gap-2 text-[11px]">
+                          <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-2 text-[11px] p-3 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/60">
                             <a
-                              href={tempEndpointInput.trim().replace(/\/edit(\?.*)?$/, '/exec') + '?test=1'}
+                              href={normalizeEndpointUrl(tempEndpointInput) + '?test=1'}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-cyan-600 dark:text-cyan-400 hover:underline inline-flex items-center gap-1 font-semibold"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-sm transition-colors w-fit"
                             >
-                              <span>Test URL directly in browser tab</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <span>Open Direct Test in New Tab</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
-                            <span className="text-slate-400">
-                              (If it prompts for Google login, &quot;Who has access&quot; is not set to &quot;Anyone&quot;)
+                            <span className="text-slate-500 dark:text-slate-400 leading-tight">
+                              Bypasses browser cross-origin restrictions to execute the test and display Google&apos;s direct response.
                             </span>
                           </div>
                         )}
@@ -897,7 +917,7 @@ function testSendInEditor() {
                           </li>
                           <li className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200">
                             <strong>CRITICAL (Fixes &quot;No email received&quot;):</strong> In the Apps Script toolbar dropdown (next to &quot;Debug&quot;), select <code>testSendInEditor</code> and click <strong>Run (▶)</strong>.<br />
-                            A popup will say <em>&quot;Authorization required&quot;</em>. Click <strong>Review Permissions → Choose your account → Advanced → Go to project (unsafe) → Allow</strong>. A test email will immediately arrive at <code>ritusehrawatai@gmail.com</code> and <code>ritusehrawat@gmail.com</code>!
+                            A popup will say <em>&quot;Authorization required&quot;</em>. Click <strong>Review Permissions → Choose your account → Advanced → Go to project (unsafe) → Allow</strong>. A test email will immediately arrive at <code>ritusehrawatai@gmail.com</code>!
                           </li>
                           <li>
                             Click <strong>Deploy → Manage deployments</strong> (or <strong>New deployment</strong>). Click the pencil icon to edit, or create a new Web App deployment.

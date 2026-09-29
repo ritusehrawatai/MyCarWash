@@ -79,6 +79,9 @@ export const es = {
     login: 'Iniciar Sesión',
     logout: 'Cerrar Sesión',
     backToHome: 'Volver al Inicio',
+    more: 'Más',
+    adminMenu: 'Menú de Administración',
+    userAccount: 'Cuenta de Usuario',
   },
   auth: {
     customerSignIn: 'Iniciar Sesión como Cliente',

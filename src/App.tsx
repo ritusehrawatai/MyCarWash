@@ -981,7 +981,7 @@ export default function App() {
   const currentRole: UserRole = currentUser?.role === 'admin' ? 'admin' : 'cashier';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-slate-100 selection:bg-blue-100 dark:selection:bg-blue-900 selection:text-blue-900 dark:selection:text-blue-100 transition-colors duration-200">
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-slate-100 selection:bg-blue-100 dark:selection:bg-blue-900 selection:text-blue-900 dark:selection:text-blue-100 transition-colors duration-200">
       {/* Top Header with Role Gating and Logout */}
       <Header
         businessName={settings.business.businessName}

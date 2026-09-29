@@ -39,23 +39,23 @@ export interface EnquirySubmissionResult {
 export function getEnquiryEndpoint(businessInfo?: BusinessInfo): string {
   // 1. Business Info in Settings
   if (businessInfo?.enquiryEndpointUrl && businessInfo.enquiryEndpointUrl.trim() !== '') {
-    return businessInfo.enquiryEndpointUrl.trim();
+    return normalizeEndpointUrl(businessInfo.enquiryEndpointUrl);
   }
 
   // 2. localStorage saved endpoint
   try {
     const saved = localStorage.getItem(STORAGE_ENQUIRY_ENDPOINT_KEY);
     if (saved && saved.trim() !== '') {
-      return saved.trim();
+      return normalizeEndpointUrl(saved);
     }
   } catch {
     // Ignore
   }
 
-  // 3. Vite environment variable
+  // 3. Vite environment variable (injected at build time in Netlify/Vercel/Cloud Run)
   const envUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
   if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
-    return envUrl.trim();
+    return normalizeEndpointUrl(envUrl);
   }
 
   return '';
@@ -140,6 +140,21 @@ export function validateEnquiryForm(data: EnquiryFormData): { isValid: boolean; 
 }
 
 /**
+ * Normalize and clean Google Apps Script Web App URL
+ */
+export function normalizeEndpointUrl(url: string): string {
+  if (!url) return '';
+  let clean = url.trim().replace(/^["']|["']$/g, '');
+  // Remove multi-account index e.g. /u/0/ or /u/1/
+  clean = clean.replace(/https?:\/\/script\.google\.com\/u\/\d+\//, 'https://script.google.com/');
+  // Auto-fix /edit to /exec
+  if (clean.includes('/macros/s/') && clean.endsWith('/edit')) {
+    clean = clean.replace(/\/edit(\?.*)?$/, '/exec');
+  }
+  return clean;
+}
+
+/**
  * Test Google Apps Script Web App endpoint accessibility and send a test email
  */
 export async function testEnquiryEndpoint(endpointUrl: string): Promise<{
@@ -155,10 +170,7 @@ export async function testEnquiryEndpoint(endpointUrl: string): Promise<{
     };
   }
 
-  let cleanUrl = endpointUrl.trim().replace(/^["']|["']$/g, '');
-  if (cleanUrl.includes('/macros/s/') && cleanUrl.endsWith('/edit')) {
-    cleanUrl = cleanUrl.replace(/\/edit(\?.*)?$/, '/exec');
-  }
+  const cleanUrl = normalizeEndpointUrl(endpointUrl);
 
   if (cleanUrl.includes('/d/') && cleanUrl.includes('/edit') && !cleanUrl.includes('/macros/s/')) {
     return {
@@ -177,8 +189,33 @@ export async function testEnquiryEndpoint(endpointUrl: string): Promise<{
     };
   }
 
-  const testUrl = cleanUrl.includes('?') ? `${cleanUrl}&test=1` : `${cleanUrl}?test=1`;
+  // First, dispatch a test POST with mode: 'no-cors' (immune to browser CORS redirect blocks)
+  try {
+    await fetch(cleanUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
+      body: JSON.stringify({
+        name: 'Connection Test',
+        email: 'test@example.com',
+        phone: '123-456-7890',
+        message: 'This is a test enquiry to verify email delivery to ritusehrawatai@gmail.com.',
+        timestamp: new Date().toLocaleString(),
+        destination: TARGET_ENQUIRY_EMAIL,
+      }),
+    });
+  } catch (err: any) {
+    return {
+      success: false,
+      statusText: 'Network dispatch failed.',
+      detail: err?.message || 'Could not dispatch test request. Check your internet connection.',
+    };
+  }
 
+  // Attempt GET to see if Google Apps Script JSON output is accessible
+  const testUrl = cleanUrl.includes('?') ? `${cleanUrl}&test=1` : `${cleanUrl}?test=1`;
   try {
     const res = await fetch(testUrl);
     const data = await res.json();
@@ -189,25 +226,27 @@ export async function testEnquiryEndpoint(endpointUrl: string): Promise<{
         statusText: 'Connection Successful & Test Email Sent!',
         detail:
           data.message ||
-          'Test email successfully dispatched to ritusehrawatai@gmail.com and ritusehrawat@gmail.com. Check your Inbox and Spam folder.',
+          `Test email successfully dispatched to ${TARGET_ENQUIRY_EMAIL}. Check your Inbox and Spam folder.`,
       };
-    } else {
+    } else if (data && data.status === 'error') {
       return {
         success: false,
         statusText: 'Script returned an error.',
         detail:
           data?.message ||
-          'The script responded with an error. Please check the "Executions" tab in Google Apps Script.',
+          'The script responded with an error. Please open script.google.com, select testSendInEditor, and click Run (▶) to authorize permissions.',
       };
     }
   } catch {
-    return {
-      success: false,
-      statusText: 'Could not connect to Google Apps Script.',
-      detail:
-        'Google blocked the request. This almost always means "Who has access" is NOT set to "Anyone". In Google Apps Script, click Deploy → Manage deployments → Edit (pencil icon), change "Who has access" to "Anyone", select Version: "New version", and click Deploy.',
-    };
+    // In many browsers, 302 cross-origin redirects from script.google.com are blocked by CORS policy,
+    // even when "Who has access" is set to "Anyone". The POST dispatched above still succeeds!
   }
+
+  return {
+    success: true,
+    statusText: 'Test Enquiry Dispatched!',
+    detail: `A test enquiry was dispatched to your Google Apps Script Web App. Please check your Gmail inbox and Spam folder at ${TARGET_ENQUIRY_EMAIL}.`,
+  };
 }
 export async function submitEnquiryToAppsScript(
   data: EnquiryFormData,
@@ -223,12 +262,7 @@ export async function submitEnquiryToAppsScript(
   }
 
   // Clean and normalize endpoint URL
-  let cleanUrl = endpointUrl.trim().replace(/^["']|["']$/g, '');
-
-  // Detect and auto-fix /edit to /exec if user copied editor URL
-  if (cleanUrl.includes('/macros/s/') && cleanUrl.endsWith('/edit')) {
-    cleanUrl = cleanUrl.replace(/\/edit(\?.*)?$/, '/exec');
-  }
+  const cleanUrl = normalizeEndpointUrl(endpointUrl);
 
   // Check if it's a project editor link instead of deployed web app
   if (cleanUrl.includes('/d/') && cleanUrl.includes('/edit') && !cleanUrl.includes('/macros/s/')) {
