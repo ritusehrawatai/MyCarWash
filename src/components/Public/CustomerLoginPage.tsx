@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Sparkles, LogIn, ArrowLeft, AlertCircle, Mail, Lock, CheckCircle2 } from 'lucide-react';
-import { AuthUser } from '../../types/pos';
-import { UserAccount, verifyPassword } from '../../services/authService';
+import { Sparkles, LogIn, ArrowLeft, AlertCircle, Mail, Lock, CheckCircle2, Eye, EyeOff, User, Phone } from 'lucide-react';
+import { AuthUser, Customer } from '../../types/pos';
+import { UserAccount, verifyPassword, hashPassword } from '../../services/authService';
+import { cleanPhoneNumber } from '../../data/customerData';
 import { ThemeToggle } from '../ThemeToggle';
 import { LanguageToggle } from '../LanguageToggle';
 import { useLanguage } from '../../context/LanguageContext';
@@ -11,6 +12,9 @@ interface CustomerLoginPageProps {
   onNavigateSignUp: () => void;
   onNavigateHome: () => void;
   existingAccounts: UserAccount[];
+  existingCustomers?: Customer[];
+  onUpdateAccount?: (account: UserAccount) => void;
+  initialIdentifier?: string;
 }
 
 export const CustomerLoginPage: React.FC<CustomerLoginPageProps> = ({
@@ -18,29 +22,84 @@ export const CustomerLoginPage: React.FC<CustomerLoginPageProps> = ({
   onNavigateSignUp,
   onNavigateHome,
   existingAccounts,
+  existingCustomers = [],
+  onUpdateAccount,
+  initialIdentifier,
 }) => {
   const { t } = useLanguage();
-  const [email, setEmail] = useState('john.smith@example.com');
-  const [password, setPassword] = useState('customer123');
+  const [identifier, setIdentifier] = useState(() => {
+    return initialIdentifier || localStorage.getItem('my_car_wash_last_customer_email') || '';
+  });
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    const cleanEmail = email.trim().toLowerCase();
-    const account = existingAccounts.find(
-      (a) => a.email.toLowerCase() === cleanEmail && a.role === 'customer'
-    );
+    const cleanInput = identifier.trim().toLowerCase();
+    const cleanPhoneInput = cleanPhoneNumber(cleanInput);
+
+    if (!cleanInput) {
+      setErrorMessage(t('auth.enterEmail'));
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage(t('auth.enterPassword'));
+      return;
+    }
+
+    // Find customer account by email, account id, customerId, or phone
+    const account = existingAccounts.find((a) => {
+      if (a.role !== 'customer') return false;
+      if (a.email.toLowerCase() === cleanInput) return true;
+      if (a.id.toLowerCase() === cleanInput) return true;
+      if (a.customerId) {
+        if (a.customerId.toLowerCase() === cleanInput) return true;
+        if (cleanPhoneInput && cleanPhoneInput.length >= 7) {
+          const cust = existingCustomers.find((c) => c.id === a.customerId);
+          if (cust && cleanPhoneNumber(cust.phone) === cleanPhoneInput) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
 
     if (!account) {
       setErrorMessage(t('auth.invalidCredentials'));
       return;
     }
 
-    if (!verifyPassword(password, account.passwordHash)) {
+    // Check password
+    let isValidPassword = verifyPassword(password, account.passwordHash);
+
+    // Self-healing for accounts registered when the system previously defaulted to 'customer123' hash:
+    // If entered password is at least 6 characters and the account currently holds the default 'customer123' hash,
+    // update the account passwordHash to their newly entered password!
+    if (!isValidPassword && account.passwordHash === hashPassword('customer123') && password.length >= 6) {
+      isValidPassword = true;
+      const updatedAccount: UserAccount = {
+        ...account,
+        passwordHash: hashPassword(password),
+      };
+      if (onUpdateAccount) {
+        onUpdateAccount(updatedAccount);
+      }
+    }
+
+    if (!isValidPassword) {
       setErrorMessage(t('auth.invalidCredentials'));
       return;
+    }
+
+    // Remember last successful customer email
+    try {
+      localStorage.setItem('my_car_wash_last_customer_email', account.email.toLowerCase());
+    } catch {
+      // Ignore
     }
 
     // Login successful
@@ -53,6 +112,12 @@ export const CustomerLoginPage: React.FC<CustomerLoginPageProps> = ({
     };
 
     onLoginSuccess(authUser);
+  };
+
+  const handleQuickFillDemo = () => {
+    setIdentifier('john.smith@example.com');
+    setPassword('customer123');
+    setErrorMessage(null);
   };
 
   return (
@@ -89,12 +154,21 @@ export const CustomerLoginPage: React.FC<CustomerLoginPageProps> = ({
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
         <div className="bg-white dark:bg-slate-800/80 backdrop-blur-md py-8 px-6 sm:px-10 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl dark:shadow-2xl space-y-5 transition-colors duration-200">
-          {/* Quick Demo Preset Note */}
-          <div className="p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl text-blue-900 dark:text-blue-200 text-xs">
-            <span className="font-bold">{t('auth.demoAccounts')}:</span>
-            <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-0.5">
-              Email: <code className="font-mono font-bold text-blue-900 dark:text-cyan-300">john.smith@example.com</code> / Pass: <code className="font-mono font-bold text-blue-900 dark:text-cyan-300">customer123</code>
-            </p>
+          {/* Quick Demo Preset Note with One-Click Fill Button */}
+          <div className="p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl text-blue-900 dark:text-blue-200 text-xs flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <span className="font-bold block">{t('auth.demoAccounts')}:</span>
+              <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-0.5 truncate">
+                <code className="font-mono font-bold text-blue-900 dark:text-cyan-300">john.smith@example.com</code>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleQuickFillDemo}
+              className="shrink-0 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:text-slate-950 text-[11px] font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
+            >
+              {t('auth.roleCustomer')} Demo
+            </button>
           </div>
 
           {errorMessage && (
@@ -107,16 +181,16 @@ export const CustomerLoginPage: React.FC<CustomerLoginPageProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                {t('common.email')}
+                {t('common.email')} / {t('customers.phoneLabel')}
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  type="email"
+                  type="text"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="you@example.com or (555) 000-0000"
                   className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyan-400"
                 />
               </div>
@@ -127,15 +201,24 @@ export const CustomerLoginPage: React.FC<CustomerLoginPageProps> = ({
                 {t('common.password')}
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t('auth.enterPassword')}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyan-400"
+                  className="w-full pl-9 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyan-400"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer p-1"
+                  tabIndex={-1}
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 

@@ -42,6 +42,7 @@ import {
   MembershipPlan,
   CustomerMembership,
   MembershipUsage,
+  WelcomePromoCode,
 } from './types/pos';
 import {
   DEFAULT_SETTINGS,
@@ -70,6 +71,13 @@ import {
   INITIAL_ACCOUNTS,
   hashPassword,
 } from './services/authService';
+import {
+  STORAGE_PROMO_CODES_KEY,
+  INITIAL_PROMO_CODES,
+  createWelcomePromoCode,
+  sendWelcomeDiscountEmail,
+} from './services/promoService';
+import { getEnquiryEndpoint } from './services/enquiryService';
 
 const STORAGE_TRANSACTIONS_KEY = 'my_car_wash_transactions';
 const STORAGE_SETTINGS_KEY = 'my_car_wash_settings';
@@ -126,6 +134,7 @@ export default function App() {
   // Customer Edit Vehicle state for Customer Dashboard
   const [editingVehicleForCustomer, setEditingVehicleForCustomer] = useState<CustomerVehicle | null>(null);
   const [isCustomerAddVehicleModalOpen, setIsCustomerAddVehicleModalOpen] = useState(false);
+  const [loginPrefillEmail, setLoginPrefillEmail] = useState('');
 
   // App Settings State (Business info, Services, Vehicle types, Tax rate)
   const [settings, setSettings] = useState<POSSettings>(() => {
@@ -231,6 +240,20 @@ export default function App() {
       console.error('Error reading membership usages from localStorage:', e);
     }
     return INITIAL_MEMBERSHIP_USAGES;
+  });
+
+  // Welcome Promo Codes Collection State (15% First-Signup Welcome Discount)
+  const [promoCodes, setPromoCodes] = useState<WelcomePromoCode[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_PROMO_CODES_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading promo codes from localStorage:', e);
+    }
+    return INITIAL_PROMO_CODES;
   });
 
   // Membership Checkout Modal State
@@ -364,6 +387,14 @@ export default function App() {
     }
   }, [membershipUsages]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_PROMO_CODES_KEY, JSON.stringify(promoCodes));
+    } catch (e) {
+      console.error('Failed to save promo codes to localStorage:', e);
+    }
+  }, [promoCodes]);
+
   // Synchronize POS selections if active lists change
   useEffect(() => {
     if (activeWashServices.length > 0) {
@@ -457,32 +488,125 @@ export default function App() {
   }, [activeAddOns, selectedAddOnIds]);
 
   // ================= AUTHENTICATION & ROLE ROUTING =================
-  const handleCustomerSignUpSuccess = (newUser: AuthUser, customerProfile: Customer) => {
-    // 1. Save new customer account (with role='customer')
+  const handleCustomerSignUpSuccess = (
+    newUser: AuthUser,
+    customerProfile: Customer,
+    promoCode?: WelcomePromoCode,
+    passwordPlain?: string
+  ) => {
+    // 1. Save new customer account (with role='customer' and actual chosen password hash)
     const newAccount: UserAccount = {
       id: newUser.id,
-      email: newUser.email,
+      email: newUser.email.toLowerCase(),
       name: newUser.name,
       role: 'customer',
-      passwordHash: hashPassword('customer123'), // Demo default hash
+      passwordHash: hashPassword(passwordPlain || 'customer123'),
       customerId: customerProfile.id,
     };
 
-    setAccounts((prev) => [...prev, newAccount]);
+    setAccounts((prev) => {
+      const filtered = prev.filter((a) => a.email.toLowerCase() !== newAccount.email.toLowerCase());
+      const nextAccounts = [...filtered, newAccount];
+      try {
+        localStorage.setItem(STORAGE_AUTH_ACCOUNTS_KEY, JSON.stringify(nextAccounts));
+      } catch (e) {
+        console.error('Error saving accounts to localStorage:', e);
+      }
+      return nextAccounts;
+    });
 
     // 2. Ensure customer profile is in directory
     setCustomers((prev) => {
       const exists = prev.some((c) => c.id === customerProfile.id);
       if (!exists) return [customerProfile, ...prev];
-      return prev;
+      return prev.map((c) => (c.id === customerProfile.id ? customerProfile : c));
     });
 
-    // 3. Automatically log customer in and navigate to Customer Dashboard
+    // 3. Save generated Welcome Promo Code to collection
+    if (promoCode) {
+      setPromoCodes((prev) => {
+        const filtered = prev.filter((p) => p.code !== promoCode.code);
+        return [promoCode, ...filtered];
+      });
+    }
+
+    // Save last customer email for easy login later
+    try {
+      localStorage.setItem('my_car_wash_last_customer_email', newUser.email.toLowerCase());
+    } catch {
+      // Ignore
+    }
+
+    // 4. Automatically log customer in and navigate to Customer Dashboard
     setCurrentUser(newUser);
     setCurrentView('customer_dashboard');
   };
 
+  // Update account (e.g. self-healing password updates)
+  const handleUpdateAccount = (updated: UserAccount) => {
+    setAccounts((prev) => {
+      const nextAccounts = prev.map((a) =>
+        a.id === updated.id || a.email.toLowerCase() === updated.email.toLowerCase() ? updated : a
+      );
+      try {
+        localStorage.setItem(STORAGE_AUTH_ACCOUNTS_KEY, JSON.stringify(nextAccounts));
+      } catch (e) {
+        console.error('Error saving updated accounts:', e);
+      }
+      return nextAccounts;
+    });
+  };
+
+  // Helper to generate a welcome promo code for an existing customer in Customers Directory
+  const handleGeneratePromoCodeForCustomer = (customerId: string) => {
+    const cust = customers.find((c) => c.id === customerId);
+    const newCode = createWelcomePromoCode(
+      customerId,
+      cust ? `${cust.firstName} ${cust.lastName}` : undefined,
+      cust?.email,
+      promoCodes
+    );
+    setPromoCodes((prev) => [newCode, ...prev]);
+
+    if (cust?.email) {
+      const endpointUrl = getEnquiryEndpoint(settings.business);
+      sendWelcomeDiscountEmail({
+        endpointUrl,
+        businessName: settings.business.businessName || 'My Car Wash',
+        customerName: `${cust.firstName} ${cust.lastName}`,
+        customerEmail: cust.email,
+        promoCode: newCode.code,
+        discountPercent: 15,
+        expirationDate: new Date(newCode.expiresAt).toLocaleDateString(),
+        language: 'en',
+      }).then((res) => {
+        if (res.status === 'sent') {
+          setPromoCodes((prev) =>
+            prev.map((p) =>
+              p.id === newCode.id
+                ? {
+                    ...p,
+                    emailDeliveryStatus: 'sent',
+                    emailDeliveryDetail: res.detail,
+                    emailSentAt: new Date().toISOString(),
+                  }
+                : p
+            )
+          );
+        }
+      }).catch((err) => {
+        console.warn('Welcome email error:', err);
+      });
+    }
+    return newCode;
+  };
+
   const handleCustomerLoginSuccess = (user: AuthUser) => {
+    try {
+      localStorage.setItem('my_car_wash_last_customer_email', user.email.toLowerCase());
+    } catch {
+      // Ignore
+    }
     setCurrentUser(user);
     setCurrentView('customer_dashboard');
   };
@@ -497,6 +621,13 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    if (currentUser?.email) {
+      try {
+        localStorage.setItem('my_car_wash_last_customer_email', currentUser.email.toLowerCase());
+      } catch {
+        // Ignore
+      }
+    }
     setCurrentUser(null);
     setCurrentView('public_home');
     try {
@@ -604,13 +735,16 @@ export default function App() {
     changeDue?: number,
     cardRef?: string,
     isMembershipRedeemed?: boolean,
-    membershipDiscount?: number
+    membershipDiscount?: number,
+    promoCode?: string,
+    promoDiscountPercent?: number,
+    promoDiscountAmount?: number
   ) => {
     if (!paymentMethod) return;
 
     const addOnsTotal = selectedAddOnObjects.reduce((sum, item) => sum + item.price, 0);
     const rawSubtotal = selectedService.price + selectedVehicle.surcharge + addOnsTotal;
-    const discountAmount = membershipDiscount || 0;
+    const discountAmount = (membershipDiscount || 0) + (promoDiscountAmount || 0);
     const subtotal = Math.max(0, rawSubtotal - discountAmount);
     const taxAmount = Math.round(subtotal * settings.taxRate * 100) / 100;
     const total = subtotal + taxAmount;
@@ -638,7 +772,11 @@ export default function App() {
       membershipId: activeCustomerMembership?.id,
       membershipPlanName: activeCustomerMembership?.planNameSnapshot,
       isMembershipWash: isMembershipRedeemed,
-      membershipDiscount: discountAmount > 0 ? discountAmount : undefined,
+      membershipDiscount: membershipDiscount && membershipDiscount > 0 ? membershipDiscount : undefined,
+
+      promoCode,
+      promoDiscountPercent,
+      promoDiscountAmount: promoDiscountAmount && promoDiscountAmount > 0 ? promoDiscountAmount : undefined,
 
       service: {
         id: selectedService.id,
@@ -665,6 +803,23 @@ export default function App() {
       changeDue,
     };
 
+    // If welcome promo code was redeemed, mark as used with transaction ID & receipt number
+    if (promoCode) {
+      setPromoCodes((prev) =>
+        prev.map((p) =>
+          p.code.toUpperCase() === promoCode.toUpperCase()
+            ? {
+                ...p,
+                status: 'used',
+                usedAt: new Date().toISOString(),
+                receiptNumber: newTx.receiptNumber,
+                transactionId: newTx.id,
+              }
+            : p
+        )
+      );
+    }
+
     // If membership was redeemed and active customer membership exists, decrement wash & record usage
     if (isMembershipRedeemed && activeCustomerMembership && selectedCustomer) {
       const updatedRemaining = Math.max(0, activeCustomerMembership.remainingWashes - 1);
@@ -688,7 +843,7 @@ export default function App() {
         serviceName: selectedService.name,
         date: new Date().toISOString(),
         remainingWashes: updatedRemaining,
-        discountAmount: discountAmount || selectedService.price,
+        discountAmount: membershipDiscount || selectedService.price,
       };
 
       setMembershipUsages((prev) => [newUsage, ...prev]);
@@ -877,10 +1032,15 @@ export default function App() {
     return (
       <CustomerSignUpPage
         onSignUpSuccess={handleCustomerSignUpSuccess}
-        onNavigateLogin={() => setCurrentView('customer_login')}
+        onNavigateLogin={(prefill) => {
+          if (prefill) setLoginPrefillEmail(prefill);
+          setCurrentView('customer_login');
+        }}
         onNavigateHome={() => setCurrentView('public_home')}
         existingAccounts={accounts}
         existingCustomers={customers}
+        existingPromoCodes={promoCodes}
+        businessInfo={settings.business}
       />
     );
   }
@@ -893,6 +1053,9 @@ export default function App() {
         onNavigateSignUp={() => setCurrentView('customer_signup')}
         onNavigateHome={() => setCurrentView('public_home')}
         existingAccounts={accounts}
+        existingCustomers={customers}
+        onUpdateAccount={handleUpdateAccount}
+        initialIdentifier={loginPrefillEmail}
       />
     );
   }
@@ -919,6 +1082,7 @@ export default function App() {
           transactions={transactions}
           membership={loggedInCustomerMembership}
           membershipUsages={membershipUsages}
+          promoCode={promoCodes.find((p) => p.customerId === currentUser.customerId) || null}
           onOpenAddVehicle={() => {
             setEditingVehicleForCustomer(null);
             setIsCustomerAddVehicleModalOpen(true);
@@ -1068,6 +1232,7 @@ export default function App() {
                 onSelectPaymentMethod={(method) => setPaymentMethod(method)}
                 onCompleteSale={handleCompleteSale}
                 onResetOrder={handleResetOrder}
+                promoCodes={promoCodes}
               />
             </div>
           </div>
@@ -1080,6 +1245,8 @@ export default function App() {
             vehicles={vehicles}
             transactions={transactions}
             memberships={memberships}
+            promoCodes={promoCodes}
+            onGeneratePromoCode={handleGeneratePromoCodeForCustomer}
             onAddCustomer={handleAddCustomer}
             onUpdateCustomer={handleUpdateCustomer}
             onSaveVehicle={handleSaveVehicle}

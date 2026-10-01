@@ -15,6 +15,7 @@ import {
   MapPin,
   Lock,
   Mail,
+  Tag,
 } from 'lucide-react';
 import { POSServiceItem, BusinessInfo } from '../../types/pos';
 import { formatCurrency } from '../../data/constants';
@@ -202,6 +203,60 @@ export const HomePage: React.FC<HomePageProps> = ({
             {/* Right Visual Hero Area: Wide Horizontal 16:9 Slideshow - strictly isolated in 5 columns */}
             <div className="lg:col-span-5 xl:col-span-5 relative w-full min-w-0">
               <HeroSlideshow />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2.5 Promotional Banner: 15% Welcome Discount */}
+      <section className="relative z-20 -mt-7 sm:-mt-9 lg:-mt-11 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-cyan-600 dark:from-slate-900 dark:via-blue-950/80 dark:to-cyan-950/70 border-2 border-blue-400/50 dark:border-cyan-500/40 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl relative overflow-hidden transition-all duration-300 hover:shadow-cyan-500/20">
+          {/* Subtle ambient lighting effects */}
+          <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-cyan-400/20 dark:bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-12 -top-12 w-64 h-64 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+            {/* Visual Focus: Prominent 15% OFF Block */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center text-center sm:text-left gap-4 sm:gap-6 w-full lg:w-auto">
+              <div className="shrink-0 flex items-center justify-center">
+                <div className="px-5 py-3.5 sm:px-6 sm:py-4 rounded-2xl bg-white/15 dark:bg-cyan-400/15 backdrop-blur-md border border-white/30 dark:border-cyan-400/30 text-center shadow-inner">
+                  <span className="block text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-none text-white dark:text-cyan-300 font-mono-numbers">
+                    15%
+                  </span>
+                  <span className="block text-xs sm:text-sm font-black uppercase tracking-widest text-cyan-200 dark:text-cyan-400 mt-1">
+                    OFF
+                  </span>
+                </div>
+              </div>
+
+              {/* Text Messaging */}
+              <div className="space-y-1.5 min-w-0 flex-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 dark:bg-cyan-400/20 text-white dark:text-cyan-200 text-[11px] font-extrabold tracking-wide uppercase">
+                  <Tag className="w-3.5 h-3.5 text-cyan-200 dark:text-cyan-400" />
+                  <span>{t('home.promoBannerBadge')}</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight uppercase leading-tight">
+                  {t('home.promoBannerTitle')}
+                </h2>
+                <p className="text-xs sm:text-sm text-blue-100 dark:text-slate-200 font-medium max-w-xl leading-relaxed">
+                  {t('home.promoBannerSubtitle')}
+                </p>
+                <p className="text-[11px] text-blue-200/90 dark:text-slate-400 pt-0.5">
+                  {t('home.promoBannerTerms')}
+                </p>
+              </div>
+            </div>
+
+            {/* Clear CTA Button */}
+            <div className="shrink-0 w-full lg:w-auto flex items-center justify-center lg:justify-end">
+              <button
+                type="button"
+                onClick={onNavigateSignUp}
+                className="w-full sm:w-auto px-7 sm:px-9 py-4 bg-white hover:bg-slate-100 dark:bg-gradient-to-r dark:from-cyan-400 dark:to-blue-500 dark:hover:from-cyan-300 dark:hover:to-blue-400 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-xl hover:shadow-2xl transition-all cursor-pointer flex items-center justify-center gap-2 group hover:scale-[1.03]"
+              >
+                <span>{t('home.promoBannerCta')}</span>
+                <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
           </div>
         </div>

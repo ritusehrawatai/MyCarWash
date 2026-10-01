@@ -1,23 +1,27 @@
-# Free Google Apps Script Enquiry Web App
+# Free Google Apps Script Email Service (Enquiries & Welcome Discounts)
 
-This guide explains how to set up the free Google Apps Script Web App that receives customer enquiries from your Car Wash website and delivers them directly to **ritusehrawatai@gmail.com** via Gmail.
+This guide explains how to set up the free Google Apps Script Web App that handles:
+1. **First-Signup 15% Welcome Discount Emails:** Automatically emails each new customer their unique `WELCOME15-XXXXXX` promo code and expiration details right after signup.
+2. **Customer Website Enquiries:** Delivers visitor contact enquiries directly to **ritusehrawatai@gmail.com** via Gmail.
 
 ---
 
 ### Architecture Overview
 
 ```
-Customer on Website
-      ↓ (Enquiry Form)
+Customer Signs Up / Submits Form on Website
+       ↓
 Google Apps Script Web App (Free)
-      ↓ (GmailApp.sendEmail)
-ritusehrawatai@gmail.com
+       ↓
+GmailApp.sendEmail (100% Free via Gmail)
+       ↓
+Delivered directly to Customer Inbox (Promo Code) & Business (Enquiries)
 ```
 
-- **Cost:** 100% Free
+- **Cost:** 100% Free (no paid third-party email providers or SMS subscriptions)
 - **Zero Subscriptions or Credit Cards**
-- **No Paid APIs or Form Services**
-- **Sends to:** `ritusehrawatai@gmail.com`
+- **Welcome Discount:** Automatically sends 15% discount code (`WELCOME15-XXXXXX`) to new customers
+- **Enquiries:** Delivered directly to `ritusehrawatai@gmail.com`
 - **Reply-To:** The customer's email address
 
 ---

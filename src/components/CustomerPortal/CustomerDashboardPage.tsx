@@ -16,14 +16,26 @@ import {
   Phone,
   Mail,
   Home,
+  Tag,
+  Copy,
+  Check,
 } from 'lucide-react';
-import { Customer, CustomerVehicle, Transaction, AuthUser, CustomerMembership, MembershipUsage } from '../../types/pos';
+import {
+  Customer,
+  CustomerVehicle,
+  Transaction,
+  AuthUser,
+  CustomerMembership,
+  MembershipUsage,
+  WelcomePromoCode,
+} from '../../types/pos';
 import { formatCurrency, formatPaymentMethodName, formatLocalizedPaymentMethod } from '../../data/constants';
 import { formatVehicleDescription } from '../../data/customerData';
 import { formatMembershipStatusBadge } from '../../data/membershipData';
 import { ThemeToggle } from '../ThemeToggle';
 import { LanguageToggle } from '../LanguageToggle';
 import { useLanguage } from '../../context/LanguageContext';
+import { getEffectivePromoStatus } from '../../services/promoService';
 
 interface CustomerDashboardPageProps {
   user: AuthUser;
@@ -32,6 +44,7 @@ interface CustomerDashboardPageProps {
   transactions: Transaction[];
   membership?: CustomerMembership | null;
   membershipUsages?: MembershipUsage[];
+  promoCode?: WelcomePromoCode | null;
   onOpenAddVehicle: () => void;
   onOpenEditVehicle: (vehicle: CustomerVehicle) => void;
   onOpenTransactionReceipt: (transaction: Transaction) => void;
@@ -48,6 +61,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
   transactions,
   membership = null,
   membershipUsages = [],
+  promoCode = null,
   onOpenAddVehicle,
   onOpenEditVehicle,
   onOpenTransactionReceipt,
@@ -59,6 +73,15 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
   const { t, formatDate, formatDateTime, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'membership' | 'vehicles' | 'history'>('overview');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const effectiveStatus = promoCode ? getEffectivePromoStatus(promoCode) : null;
 
   // Filter vehicles belonging to this customer
   const customerVehicles = vehicles.filter((v) => v.customerId === user.customerId);
@@ -297,6 +320,74 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
           {/* TAB 1: Profile Details */}
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 15% Welcome Promo Discount Card */}
+              {promoCode && (
+                <div className="md:col-span-2 bg-gradient-to-r from-blue-500/10 via-cyan-500/10 to-indigo-500/10 dark:from-blue-950/40 dark:via-cyan-950/30 dark:to-indigo-950/40 border-2 border-dashed border-blue-400 dark:border-cyan-500/60 rounded-3xl p-6 sm:p-7 shadow-xs transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-600 dark:bg-cyan-400 text-white dark:text-slate-950">
+                          <Tag className="w-3 h-3" />
+                          <span>15% OFF</span>
+                        </span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-cyan-300">
+                          {t('promo.dashboardCardTitle')}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-700 dark:text-slate-200 font-medium max-w-xl">
+                        {t('promo.dashboardCardSubtitle')}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 pt-0.5">
+                        <span>{t('promo.dashboardInstructions')}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:items-end gap-2 shrink-0">
+                      <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-cyan-800/80 rounded-2xl px-4 py-2 shadow-xs">
+                        <span className="font-mono font-black text-lg sm:text-xl text-blue-600 dark:text-cyan-400 tracking-wider">
+                          {promoCode.code}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCode(promoCode.code)}
+                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
+                          title={copiedCode ? t('promo.codeCopied') : t('promo.copyCode')}
+                        >
+                          {copiedCode ? (
+                            <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Promo Status Pill & Expiry */}
+                      <div className="flex items-center gap-2 text-xs">
+                        {effectiveStatus === 'available' && (
+                          <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-full font-bold">
+                            ● {t('promo.statusAvailable')}
+                          </span>
+                        )}
+                        {effectiveStatus === 'used' && (
+                          <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 rounded-full font-bold">
+                            ✓ {t('promo.statusUsed')}
+                            {promoCode.usedAt && ` (${new Date(promoCode.usedAt).toLocaleDateString()})`}
+                          </span>
+                        )}
+                        {effectiveStatus === 'expired' && (
+                          <span className="px-2.5 py-0.5 bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-full font-bold">
+                            ✕ {t('promo.statusExpired')}
+                          </span>
+                        )}
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {t('promo.profileExpiresAt')}: {new Date(promoCode.expiresAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-xs transition-colors">
                 <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
                   <User className="w-4 h-4 text-blue-600 dark:text-cyan-400" />

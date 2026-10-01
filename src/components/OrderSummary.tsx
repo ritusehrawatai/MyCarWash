@@ -12,12 +12,24 @@ import {
   Receipt,
   User,
   Sparkles,
+  Tag,
+  AlertCircle,
 } from 'lucide-react';
-import { WashService, VehicleType, AddOn, PaymentMethod, Customer, CustomerVehicle, CustomerMembership } from '../types/pos';
+import {
+  WashService,
+  VehicleType,
+  AddOn,
+  PaymentMethod,
+  Customer,
+  CustomerVehicle,
+  CustomerMembership,
+  WelcomePromoCode,
+} from '../types/pos';
 import { formatCurrency } from '../data/constants';
 import { formatVehicleDescription } from '../data/customerData';
 import { CardPaymentPanel } from './CardPaymentPanel';
 import { useLanguage } from '../context/LanguageContext';
+import { validatePromoCodeForOrder, getEffectivePromoStatus } from '../services/promoService';
 
 interface OrderSummaryProps {
   selectedService: WashService;
@@ -36,9 +48,13 @@ interface OrderSummaryProps {
     changeDue?: number,
     cardRef?: string,
     isMembershipRedeemed?: boolean,
-    membershipDiscount?: number
+    membershipDiscount?: number,
+    promoCode?: string,
+    promoDiscountPercent?: number,
+    promoDiscountAmount?: number
   ) => void;
   onResetOrder: () => void;
+  promoCodes?: WelcomePromoCode[];
 }
 
 export const OrderSummary: React.FC<OrderSummaryProps> = ({
@@ -55,8 +71,42 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   onSelectPaymentMethod,
   onCompleteSale,
   onResetOrder,
+  promoCodes = [],
 }) => {
   const { t } = useLanguage();
+
+  // Promo Code State
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<WelcomePromoCode | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+
+  // Clear or reset promo code if selected customer changes or is removed
+  useEffect(() => {
+    if (appliedPromo && appliedPromo.customerId !== selectedCustomer?.id) {
+      setAppliedPromo(null);
+      setPromoError(null);
+    }
+  }, [selectedCustomer, appliedPromo]);
+
+  // If customer is redeeming a free membership wash, promo discount cannot be combined
+  useEffect(() => {
+    if (isRedeemingMembershipWash && appliedPromo) {
+      setAppliedPromo(null);
+      setPromoError(t('promo.errorMembershipConflict'));
+    }
+  }, [isRedeemingMembershipWash, appliedPromo, t]);
+
+  // Check if selected customer has an available welcome promo code
+  const customerAvailablePromo = React.useMemo(() => {
+    if (!selectedCustomer || !promoCodes) return null;
+    return (
+      promoCodes.find(
+        (p) =>
+          p.customerId === selectedCustomer.id &&
+          getEffectivePromoStatus(p) === 'available'
+      ) || null
+    );
+  }, [selectedCustomer, promoCodes]);
 
   // Calculations
   const addOnsTotal = selectedAddOns.reduce((sum, item) => sum + item.price, 0);
@@ -79,9 +129,51 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
     : 0;
 
   const totalMembershipDiscount = washDiscount + addOnDiscount;
-  const subtotal = Math.max(0, rawSubtotal - totalMembershipDiscount);
+
+  // Promo Discount Calculation (15% applied to subtotal before tax)
+  const promoDiscountPercent = appliedPromo && !canRedeemWash ? appliedPromo.discountPercent : 0;
+  const promoDiscountAmount = promoDiscountPercent > 0
+    ? Math.round(rawSubtotal * (promoDiscountPercent / 100) * 100) / 100
+    : 0;
+
+  const totalDiscounts = totalMembershipDiscount + promoDiscountAmount;
+  const subtotal = Math.max(0, rawSubtotal - totalDiscounts);
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
   const total = subtotal + taxAmount;
+
+  // Handler to apply promo code
+  const handleApplyPromoCode = (codeToApply?: string) => {
+    setPromoError(null);
+    const code = (codeToApply || promoInput).trim();
+    if (!code) {
+      setPromoError(t('promo.errorInvalidCode'));
+      return;
+    }
+
+    const validation = validatePromoCodeForOrder(
+      code,
+      selectedCustomer,
+      promoCodes,
+      {
+        isRedeemingMembershipWash: canRedeemWash,
+        alreadyAppliedCode: appliedPromo?.code,
+      }
+    );
+
+    if (!validation.isValid) {
+      setPromoError(validation.errorMessage || t('promo.errorInvalidCode'));
+      return;
+    }
+
+    setAppliedPromo(validation.promoCode || null);
+    setPromoInput('');
+    setPromoError(null);
+  };
+
+  const handleRemovePromoCode = () => {
+    setAppliedPromo(null);
+    setPromoError(null);
+  };
 
   // Automatically select MEMBERSHIP payment method if total is $0.00
   useEffect(() => {
@@ -114,15 +206,49 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
     if (paymentMethod === 'CASH') {
       const tendered = cashTendered !== null && cashTendered >= total ? cashTendered : total;
       const change = tendered - total;
-      onCompleteSale(tendered, change, undefined, canRedeemWash, totalMembershipDiscount);
+      onCompleteSale(
+        tendered,
+        change,
+        undefined,
+        canRedeemWash,
+        totalMembershipDiscount,
+        appliedPromo?.code,
+        appliedPromo ? appliedPromo.discountPercent : undefined,
+        appliedPromo ? promoDiscountAmount : undefined
+      );
     } else {
-      onCompleteSale(undefined, undefined, undefined, canRedeemWash, totalMembershipDiscount);
+      onCompleteSale(
+        undefined,
+        undefined,
+        undefined,
+        canRedeemWash,
+        totalMembershipDiscount,
+        appliedPromo?.code,
+        appliedPromo ? appliedPromo.discountPercent : undefined,
+        appliedPromo ? promoDiscountAmount : undefined
+      );
     }
   };
 
   // Handler for card completion from CardPaymentPanel
   const handleCardPaymentSuccess = (maskedCard?: string) => {
-    onCompleteSale(undefined, undefined, maskedCard, canRedeemWash, totalMembershipDiscount);
+    onCompleteSale(
+      undefined,
+      undefined,
+      maskedCard,
+      canRedeemWash,
+      totalMembershipDiscount,
+      appliedPromo?.code,
+      appliedPromo ? appliedPromo.discountPercent : undefined,
+      appliedPromo ? promoDiscountAmount : undefined
+    );
+  };
+
+  const handleReset = () => {
+    setAppliedPromo(null);
+    setPromoError(null);
+    setPromoInput('');
+    onResetOrder();
   };
 
   const isCardSelected = paymentMethod === 'DEBIT_CARD' || paymentMethod === 'CREDIT_CARD';
@@ -138,7 +264,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           </div>
           <button
             type="button"
-            onClick={onResetOrder}
+            onClick={handleReset}
             className="flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-red-700 dark:hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
             title={t('pos.resetDefault')}
           >
@@ -266,6 +392,102 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           )}
         </div>
 
+        {/* 15% Welcome Promo Discount Input Section */}
+        <div className="py-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1">
+              <Tag className="w-3 h-3 text-blue-600 dark:text-cyan-400" />
+              <span>{t('promo.title')}</span>
+            </span>
+            {appliedPromo && (
+              <span className="text-[10px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-cyan-300 px-2 py-0.5 rounded-full">
+                15% OFF
+              </span>
+            )}
+          </div>
+
+          {appliedPromo ? (
+            <div className="p-2.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-blue-800 dark:text-cyan-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
+                  <span className="font-mono">{appliedPromo.code}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRemovePromoCode}
+                  className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                >
+                  {t('promo.removeCode')}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                {t('promo.termsNotice')}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* Quick 1-click apply banner if selected customer has available promo code */}
+              {customerAvailablePromo && (
+                <div className="p-2.5 bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800 rounded-xl flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="block text-[11px] font-bold text-cyan-900 dark:text-cyan-200 truncate">
+                      {t('promo.welcomeDiscountTitle')}
+                    </span>
+                    <span className="block font-mono text-[10px] text-cyan-700 dark:text-cyan-400 truncate">
+                      {customerAvailablePromo.code}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyPromoCode(customerAvailablePromo.code)}
+                    disabled={canRedeemWash}
+                    className="shrink-0 px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    {t('promo.applyAvailableCode')}
+                  </button>
+                </div>
+              )}
+
+              {/* Promo input field */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promoInput}
+                  onChange={(e) => {
+                    setPromoInput(e.target.value.toUpperCase());
+                    if (promoError) setPromoError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleApplyPromoCode();
+                    }
+                  }}
+                  disabled={canRedeemWash}
+                  placeholder={t('promo.enterPromoCode')}
+                  className="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs uppercase placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-900 dark:text-white disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleApplyPromoCode()}
+                  disabled={canRedeemWash}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {t('promo.applyCode')}
+                </button>
+              </div>
+
+              {promoError && (
+                <div className="p-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                  <span>{promoError}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Pricing Math */}
         <div className="py-4 space-y-2 border-b border-slate-100 dark:border-slate-800 font-mono-numbers text-sm">
           <div className="flex justify-between text-slate-600 dark:text-slate-400">
@@ -287,6 +509,16 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
             <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-semibold text-xs">
               <span>{t('pos.addOnDiscountApplied', { percent: addOnDiscountPercent })}</span>
               <span>-{formatCurrency(addOnDiscount)}</span>
+            </div>
+          )}
+
+          {promoDiscountAmount > 0 && (
+            <div className="flex justify-between text-blue-600 dark:text-cyan-400 font-semibold text-xs">
+              <span className="flex items-center gap-1">
+                <Tag className="w-3 h-3 text-blue-500 dark:text-cyan-400" />
+                <span>{t('promo.welcomeDiscountBadge')} ({appliedPromo?.code})</span>
+              </span>
+              <span>-{formatCurrency(promoDiscountAmount)}</span>
             </div>
           )}
 

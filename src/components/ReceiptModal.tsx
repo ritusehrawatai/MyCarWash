@@ -200,6 +200,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   <span>-{formatCurrency(transaction.membershipDiscount)}</span>
                 </div>
               )}
+              {transaction.promoCode && transaction.promoDiscountAmount !== undefined && transaction.promoDiscountAmount > 0 && (
+                <div className="flex justify-between items-center text-xs text-blue-700 dark:text-cyan-400 font-semibold bg-blue-50 dark:bg-blue-950/40 p-1.5 rounded mb-1">
+                  <span>{t('promo.welcomeDiscountBadge')} ({transaction.promoCode}):</span>
+                  <span className="font-bold">-{formatCurrency(transaction.promoDiscountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>{t('receipt.subtotal')}:</span>
                 <span>{formatCurrency(transaction.subtotal)}</span>

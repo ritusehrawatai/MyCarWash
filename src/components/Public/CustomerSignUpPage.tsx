@@ -1,18 +1,27 @@
 import React, { useState } from 'react';
-import { UserPlus, ArrowLeft, AlertCircle, CheckCircle2, Mail, Lock, User, Phone } from 'lucide-react';
-import { Customer, AuthUser } from '../../types/pos';
+import { UserPlus, ArrowLeft, AlertCircle, CheckCircle2, Mail, Lock, User, Phone, Tag, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Customer, AuthUser, BusinessInfo, WelcomePromoCode } from '../../types/pos';
 import { UserAccount } from '../../services/authService';
 import { generateCustomerId, cleanPhoneNumber } from '../../data/customerData';
 import { ThemeToggle } from '../ThemeToggle';
 import { LanguageToggle } from '../LanguageToggle';
 import { useLanguage } from '../../context/LanguageContext';
+import { createWelcomePromoCode, sendWelcomeDiscountEmail } from '../../services/promoService';
+import { getEnquiryEndpoint } from '../../services/enquiryService';
 
 interface CustomerSignUpPageProps {
-  onSignUpSuccess: (user: AuthUser, customer: Customer) => void;
-  onNavigateLogin: () => void;
+  onSignUpSuccess: (
+    user: AuthUser,
+    customer: Customer,
+    promoCode: WelcomePromoCode,
+    passwordPlain: string
+  ) => void;
+  onNavigateLogin: (prefillEmail?: string) => void;
   onNavigateHome: () => void;
   existingAccounts: UserAccount[];
   existingCustomers: Customer[];
+  existingPromoCodes?: WelcomePromoCode[];
+  businessInfo?: BusinessInfo;
 }
 
 export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
@@ -21,14 +30,18 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
   onNavigateHome,
   existingAccounts,
   existingCustomers,
+  existingPromoCodes = [],
+  businessInfo,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,7 +105,42 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
       };
     }
 
-    // 6. Every account created through public Sign Up MUST have role = 'customer'
+    // 6. Generate 15% First-Signup Welcome Discount Promo Code (Unique, valid 3 months)
+    const newPromoCode = createWelcomePromoCode(
+      targetCustomer.id,
+      `${trimmedFirst} ${trimmedLast}`,
+      trimmedEmail,
+      existingPromoCodes
+    );
+
+    // 7. Dispatch Welcome Discount Email asynchronously via Google Apps Script (Non-blocking)
+    const endpointUrl = getEnquiryEndpoint(businessInfo);
+    sendWelcomeDiscountEmail({
+      endpointUrl,
+      businessName: businessInfo?.businessName || 'My Car Wash',
+      customerName: `${trimmedFirst} ${trimmedLast}`,
+      customerEmail: trimmedEmail,
+      promoCode: newPromoCode.code,
+      discountPercent: 15,
+      expirationDate: new Date(newPromoCode.expiresAt).toLocaleDateString(),
+      language: language || 'en',
+    }).then((res) => {
+      if (res.status === 'sent') {
+        newPromoCode.emailDeliveryStatus = 'sent';
+        newPromoCode.emailDeliveryDetail = res.detail;
+        newPromoCode.emailSentAt = new Date().toISOString();
+      } else if (res.status === 'not_configured') {
+        newPromoCode.emailDeliveryStatus = 'not_configured';
+        newPromoCode.emailDeliveryDetail = res.detail;
+      } else {
+        newPromoCode.emailDeliveryStatus = 'failed';
+        newPromoCode.emailDeliveryDetail = res.detail;
+      }
+    }).catch((err) => {
+      console.warn('Welcome discount email dispatch error:', err);
+    });
+
+    // 8. Every account created through public Sign Up MUST have role = 'customer'
     const newAuthUser: AuthUser = {
       id: `USR-${Date.now()}`,
       email: trimmedEmail,
@@ -101,7 +149,14 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
       customerId: targetCustomer.id,
     };
 
-    onSignUpSuccess(newAuthUser, targetCustomer);
+    // Store in localStorage for fast pre-fill on login page
+    try {
+      localStorage.setItem('my_car_wash_last_customer_email', trimmedEmail);
+    } catch {
+      // Ignore
+    }
+
+    onSignUpSuccess(newAuthUser, targetCustomer, newPromoCode, password);
   };
 
   return (
@@ -138,10 +193,36 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
         <div className="bg-white dark:bg-slate-800/80 backdrop-blur-md py-8 px-6 sm:px-10 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl dark:shadow-2xl space-y-5 transition-colors duration-200">
+          {/* Welcome Promo Discount Incentive Callout */}
+          <div className="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 dark:bg-cyan-400 text-white dark:text-slate-950 flex items-center justify-center shrink-0 shadow-xs">
+              <Tag className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="block text-xs font-black text-blue-900 dark:text-cyan-200">
+                {t('promo.welcomeDiscountBadge')}
+              </span>
+              <span className="block text-[11px] text-slate-600 dark:text-slate-300">
+                {t('promo.termsNotice')}
+              </span>
+            </div>
+          </div>
+
           {errorMessage && (
-            <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-rose-800 dark:text-rose-300 text-xs flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
+            <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-xl text-rose-800 dark:text-rose-300 text-xs flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+              {errorMessage === t('auth.emailExistsError') && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateLogin(email.trim())}
+                  className="shrink-0 underline font-bold hover:text-rose-950 dark:hover:text-white cursor-pointer ml-2"
+                >
+                  {t('auth.signInNow')}
+                </button>
+              )}
             </div>
           )}
 
@@ -222,15 +303,24 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
                 {t('common.password')} <span className="text-blue-600 dark:text-cyan-400">*</span>
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t('auth.enterPassword')}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyan-400"
+                  className="w-full pl-9 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyan-400"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer p-1"
+                  tabIndex={-1}
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -240,15 +330,24 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
                 {t('common.confirmPassword')} <span className="text-blue-600 dark:text-cyan-400">*</span>
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder={t('auth.enterPassword')}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyan-400"
+                  className="w-full pl-9 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-cyan-400"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer p-1"
+                  tabIndex={-1}
+                  aria-label="Toggle confirm password visibility"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -266,7 +365,7 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
             <span>{t('auth.alreadyHaveAccount')} </span>
             <button
               type="button"
-              onClick={onNavigateLogin}
+              onClick={() => onNavigateLogin(email.trim())}
               className="text-blue-600 dark:text-cyan-400 font-bold hover:underline cursor-pointer"
             >
               {t('auth.signInNow')}

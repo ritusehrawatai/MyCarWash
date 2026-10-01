@@ -15,11 +15,14 @@ import {
   CheckCircle2,
   Trash2,
   Sparkles,
+  Tag,
+  MailCheck,
 } from 'lucide-react';
-import { Customer, CustomerVehicle, Transaction, UserRole, CustomerMembership } from '../../types/pos';
+import { Customer, CustomerVehicle, Transaction, UserRole, CustomerMembership, WelcomePromoCode } from '../../types/pos';
 import { formatCurrency, formatPaymentMethodName, formatLocalizedPaymentMethod } from '../../data/constants';
 import { formatVehicleDescription } from '../../data/customerData';
 import { useLanguage } from '../../context/LanguageContext';
+import { getEffectivePromoStatus } from '../../services/promoService';
 
 interface CustomerProfileModalProps {
   customer: Customer | null;
@@ -28,6 +31,8 @@ interface CustomerProfileModalProps {
   vehicles: CustomerVehicle[];
   transactions: Transaction[];
   membership?: CustomerMembership | null;
+  promoCode?: WelcomePromoCode | null;
+  onGeneratePromoCode?: (customerId: string) => void;
   onOpenAddVehicle: (customerId: string) => void;
   onOpenEditVehicle: (vehicle: CustomerVehicle) => void;
   onToggleVehicleActive: (vehicle: CustomerVehicle) => void;
@@ -43,6 +48,8 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
   vehicles,
   transactions,
   membership = null,
+  promoCode = null,
+  onGeneratePromoCode,
   onOpenAddVehicle,
   onOpenEditVehicle,
   onToggleVehicleActive,
@@ -320,6 +327,123 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Section: Welcome Promotional Discount (15% First-Signup Code) */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl space-y-3 transition-colors">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Tag className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+                <span>{t('promo.profileSectionTitle')}</span>
+              </h4>
+
+              {promoCode ? (
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-cyan-300 border border-blue-200 dark:border-blue-800">
+                    15% OFF
+                  </span>
+                  {(() => {
+                    const status = getEffectivePromoStatus(promoCode);
+                    if (status === 'available') {
+                      return (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          ● {t('promo.statusAvailable')}
+                        </span>
+                      );
+                    }
+                    if (status === 'used') {
+                      return (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                          ✓ {t('promo.statusUsed')}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                        ✕ {t('promo.statusExpired')}
+                      </span>
+                    );
+                  })()}
+                </div>
+              ) : (
+                onGeneratePromoCode && (
+                  <button
+                    type="button"
+                    onClick={() => onGeneratePromoCode(customer.id)}
+                    className="px-3 py-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t('promo.generatePromoButton')}</span>
+                  </button>
+                )
+              )}
+            </div>
+
+            {promoCode ? (
+              <div className="space-y-2 text-xs">
+                <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider block font-bold">
+                      {t('promo.promoCodeLabel')}
+                    </span>
+                    <span className="font-mono text-sm sm:text-base font-black text-blue-600 dark:text-cyan-400 tracking-wider">
+                      {promoCode.code}
+                    </span>
+                  </div>
+                  <div className="text-right space-y-0.5">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                      {t('promo.profileExpiresAt')}
+                    </span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {new Date(promoCode.expiresAt).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-600 dark:text-slate-400 pt-1">
+                  <div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{t('promo.profileCreatedAt')}</span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200">
+                      {new Date(promoCode.createdAt).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')}
+                    </span>
+                  </div>
+
+                  {promoCode.status === 'used' && (
+                    <>
+                      <div>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{t('promo.profileUsedAt')}</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {promoCode.usedAt ? new Date(promoCode.usedAt).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US') : '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{t('promo.profileReceiptNumber')}</span>
+                        <span className="font-mono font-bold text-blue-600 dark:text-cyan-400">
+                          {promoCode.receiptNumber || '—'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {promoCode.emailDeliveryStatus && (
+                    <div className="col-span-2 sm:col-span-3 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center gap-1.5 text-[11px]">
+                      <MailCheck className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
+                      <span className="text-slate-600 dark:text-slate-300">
+                        {promoCode.emailDeliveryStatus === 'sent'
+                          ? t('promo.emailDelivered', { email: promoCode.customerEmail || customer.email || '' })
+                          : promoCode.emailDeliveryStatus === 'not_configured'
+                          ? t('promo.emailNotConfigured')
+                          : t('promo.emailFailed')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                {t('promo.noPromoRecorded')}
+              </p>
+            )}
+          </div>
 
           {/* Section 2: Vehicles */}
           <div className="space-y-3">

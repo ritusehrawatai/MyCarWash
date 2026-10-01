@@ -12,7 +12,7 @@ import {
   TrendingUp,
   X,
 } from 'lucide-react';
-import { Customer, CustomerVehicle, Transaction, UserRole, CustomerMembership } from '../../types/pos';
+import { Customer, CustomerVehicle, Transaction, UserRole, CustomerMembership, WelcomePromoCode } from '../../types/pos';
 import { formatCurrency } from '../../data/constants';
 import { CustomerProfileModal } from './CustomerProfileModal';
 import { AddCustomerModal } from './AddCustomerModal';
@@ -25,6 +25,8 @@ interface CustomersPageProps {
   vehicles: CustomerVehicle[];
   transactions: Transaction[];
   memberships?: CustomerMembership[];
+  promoCodes?: WelcomePromoCode[];
+  onGeneratePromoCode?: (customerId: string) => void;
   onAddCustomer: (customer: Customer) => void;
   onUpdateCustomer: (customer: Customer) => void;
   onSaveVehicle: (vehicle: CustomerVehicle) => void;
@@ -40,6 +42,8 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
   vehicles,
   transactions,
   memberships = [],
+  promoCodes = [],
+  onGeneratePromoCode,
   onAddCustomer,
   onUpdateCustomer,
   onSaveVehicle,
@@ -358,6 +362,12 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               null
             : null
         }
+        promoCode={
+          selectedCustomer
+            ? promoCodes.find((p) => p.customerId === selectedCustomer.id) || null
+            : null
+        }
+        onGeneratePromoCode={onGeneratePromoCode}
         onOpenAddVehicle={(cId) => {
           setTargetCustomerIdForVehicle(cId);
           setVehicleToEdit(null);

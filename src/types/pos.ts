@@ -172,6 +172,11 @@ export interface Transaction {
   transactionType?: 'wash' | 'membership_signup';
   billingPeriod?: string;
 
+  // Welcome Promo Discount References (Additive)
+  promoCode?: string;
+  promoDiscountPercent?: number; // e.g. 15
+  promoDiscountAmount?: number; // e.g. 7.50
+
   service: {
     id: string;
     name: string;
@@ -196,4 +201,24 @@ export interface Transaction {
   cashTendered?: number;
   changeDue?: number;
   voidedAt?: string;
+}
+
+export type PromoCodeStatus = 'available' | 'used' | 'expired';
+
+export interface WelcomePromoCode {
+  id: string; // e.g. PROMO-000001
+  code: string; // e.g. WELCOME15-ABC123
+  customerId: string;
+  customerName?: string;
+  customerEmail?: string;
+  discountPercent: number; // 15
+  createdAt: string; // ISO date string
+  expiresAt: string; // ISO date string (3 months from createdAt)
+  status: PromoCodeStatus;
+  usedAt?: string; // ISO date string when redeemed
+  transactionId?: string; // Transaction ID where redeemed
+  receiptNumber?: string; // Receipt number where redeemed
+  emailDeliveryStatus?: 'sent' | 'pending' | 'failed' | 'not_configured';
+  emailDeliveryDetail?: string;
+  emailSentAt?: string;
 }
