@@ -27,6 +27,10 @@ interface CustomersPageProps {
   memberships?: CustomerMembership[];
   promoCodes?: WelcomePromoCode[];
   onGeneratePromoCode?: (customerId: string) => void;
+  onResendWelcomeEmail?: (
+    promo: WelcomePromoCode,
+    targetEmail: string
+  ) => Promise<{ success: boolean; status: 'sent' | 'not_configured' | 'failed'; detail: string }>;
   onAddCustomer: (customer: Customer) => void;
   onUpdateCustomer: (customer: Customer) => void;
   onSaveVehicle: (vehicle: CustomerVehicle) => void;
@@ -44,6 +48,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
   memberships = [],
   promoCodes = [],
   onGeneratePromoCode,
+  onResendWelcomeEmail,
   onAddCustomer,
   onUpdateCustomer,
   onSaveVehicle,
@@ -368,6 +373,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
             : null
         }
         onGeneratePromoCode={onGeneratePromoCode}
+        onResendWelcomeEmail={onResendWelcomeEmail}
         onOpenAddVehicle={(cId) => {
           setTargetCustomerIdForVehicle(cId);
           setVehicleToEdit(null);

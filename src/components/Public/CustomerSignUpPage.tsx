@@ -44,7 +44,7 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -113,32 +113,33 @@ export const CustomerSignUpPage: React.FC<CustomerSignUpPageProps> = ({
       existingPromoCodes
     );
 
-    // 7. Dispatch Welcome Discount Email asynchronously via Google Apps Script (Non-blocking)
+    // 7. Dispatch Welcome Discount Email via Google Apps Script
     const endpointUrl = getEnquiryEndpoint(businessInfo);
-    sendWelcomeDiscountEmail({
-      endpointUrl,
-      businessName: businessInfo?.businessName || 'My Car Wash',
-      customerName: `${trimmedFirst} ${trimmedLast}`,
-      customerEmail: trimmedEmail,
-      promoCode: newPromoCode.code,
-      discountPercent: 15,
-      expirationDate: new Date(newPromoCode.expiresAt).toLocaleDateString(),
-      language: language || 'en',
-    }).then((res) => {
-      if (res.status === 'sent') {
-        newPromoCode.emailDeliveryStatus = 'sent';
+    if (!endpointUrl || !endpointUrl.trim()) {
+      newPromoCode.emailDeliveryStatus = 'not_configured';
+      newPromoCode.emailDeliveryDetail = 'Google Apps Script Web App URL is not configured in Settings.';
+    } else {
+      try {
+        const res = await sendWelcomeDiscountEmail({
+          endpointUrl,
+          businessName: businessInfo?.businessName || 'My Car Wash',
+          customerName: `${trimmedFirst} ${trimmedLast}`,
+          customerEmail: trimmedEmail,
+          promoCode: newPromoCode.code,
+          discountPercent: 15,
+          expirationDate: new Date(newPromoCode.expiresAt).toLocaleDateString(),
+          language: language || 'en',
+        });
+        newPromoCode.emailDeliveryStatus = res.status;
         newPromoCode.emailDeliveryDetail = res.detail;
-        newPromoCode.emailSentAt = new Date().toISOString();
-      } else if (res.status === 'not_configured') {
-        newPromoCode.emailDeliveryStatus = 'not_configured';
-        newPromoCode.emailDeliveryDetail = res.detail;
-      } else {
+        if (res.status === 'sent') {
+          newPromoCode.emailSentAt = new Date().toISOString();
+        }
+      } catch (err: any) {
         newPromoCode.emailDeliveryStatus = 'failed';
-        newPromoCode.emailDeliveryDetail = res.detail;
+        newPromoCode.emailDeliveryDetail = err?.message || 'Welcome email dispatch error.';
       }
-    }).catch((err) => {
-      console.warn('Welcome discount email dispatch error:', err);
-    });
+    }
 
     // 8. Every account created through public Sign Up MUST have role = 'customer'
     const newAuthUser: AuthUser = {

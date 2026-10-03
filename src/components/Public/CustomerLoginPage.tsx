@@ -140,9 +140,15 @@ export const CustomerLoginPage: React.FC<CustomerLoginPageProps> = ({
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md px-4 mt-8">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 dark:from-cyan-400 dark:to-blue-600 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20 mb-3">
+          <button
+            type="button"
+            onClick={onNavigateHome}
+            className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 dark:from-cyan-400 dark:to-blue-600 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20 mb-3 hover:scale-105 transition-transform cursor-pointer"
+            title={t('nav.backToHome')}
+            aria-label={t('nav.backToHome')}
+          >
             <LogIn className="w-6 h-6 text-white dark:text-slate-950 font-bold" />
-          </div>
+          </button>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {t('auth.customerSignIn')}
           </h2>

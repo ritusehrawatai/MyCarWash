@@ -306,3 +306,44 @@ export async function sendWelcomeDiscountEmail(params: {
     };
   }
 }
+
+/**
+ * Send a test welcome discount email to verify the Google Apps Script Web App connection
+ */
+export async function testWelcomePromoEmail(
+  endpointUrl: string,
+  targetEmail: string,
+  businessName: string = 'My Car Wash'
+): Promise<{
+  success: boolean;
+  status: 'sent' | 'failed' | 'not_configured';
+  detail: string;
+}> {
+  if (!endpointUrl || !endpointUrl.trim()) {
+    return {
+      success: false,
+      status: 'not_configured',
+      detail: 'No Google Apps Script Web App URL provided. Please enter your Web App URL ending in /exec.',
+    };
+  }
+
+  const cleanUrl = endpointUrl.trim();
+  if (!cleanUrl.startsWith('https://script.google.com/macros/s/')) {
+    return {
+      success: false,
+      status: 'failed',
+      detail: 'Invalid URL format. URL must start with https://script.google.com/macros/s/... and end in /exec',
+    };
+  }
+
+  return sendWelcomeDiscountEmail({
+    endpointUrl: cleanUrl,
+    businessName,
+    customerName: 'Test Recipient',
+    customerEmail: targetEmail.trim(),
+    promoCode: 'WELCOME15-TEST',
+    discountPercent: 15,
+    expirationDate: new Date(Date.now() + 90 * 86400000).toLocaleDateString(),
+    language: 'en',
+  });
+}

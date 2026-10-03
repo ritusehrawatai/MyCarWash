@@ -17,6 +17,8 @@ import {
   Sparkles,
   Tag,
   MailCheck,
+  Send,
+  Loader2,
 } from 'lucide-react';
 import { Customer, CustomerVehicle, Transaction, UserRole, CustomerMembership, WelcomePromoCode } from '../../types/pos';
 import { formatCurrency, formatPaymentMethodName, formatLocalizedPaymentMethod } from '../../data/constants';
@@ -33,6 +35,10 @@ interface CustomerProfileModalProps {
   membership?: CustomerMembership | null;
   promoCode?: WelcomePromoCode | null;
   onGeneratePromoCode?: (customerId: string) => void;
+  onResendWelcomeEmail?: (
+    promo: WelcomePromoCode,
+    targetEmail: string
+  ) => Promise<{ success: boolean; status: 'sent' | 'not_configured' | 'failed'; detail: string }>;
   onOpenAddVehicle: (customerId: string) => void;
   onOpenEditVehicle: (vehicle: CustomerVehicle) => void;
   onToggleVehicleActive: (vehicle: CustomerVehicle) => void;
@@ -50,6 +56,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
   membership = null,
   promoCode = null,
   onGeneratePromoCode,
+  onResendWelcomeEmail,
   onOpenAddVehicle,
   onOpenEditVehicle,
   onToggleVehicleActive,
@@ -58,6 +65,23 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
   userRole = 'admin',
 }) => {
   const { t, language } = useLanguage();
+  const [isResending, setIsResending] = useState(false);
+  const [resendStatusMessage, setResendStatusMessage] = useState<string | null>(null);
+
+  const handleResendPromo = async () => {
+    if (!promoCode || !onResendWelcomeEmail || !customer?.email) return;
+    setIsResending(true);
+    setResendStatusMessage(null);
+    try {
+      const res = await onResendWelcomeEmail(promoCode, customer.email);
+      setResendStatusMessage(res.detail || (res.success ? t('promo.emailResentSuccess', { email: customer.email }) : t('promo.emailResendFailed')));
+    } catch {
+      setResendStatusMessage(t('promo.emailResendFailed'));
+    } finally {
+      setIsResending(false);
+      setTimeout(() => setResendStatusMessage(null), 5000);
+    }
+  };
   const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [editFirst, setEditFirst] = useState('');
   const [editLast, setEditLast] = useState('');
@@ -425,15 +449,35 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                   )}
 
                   {promoCode.emailDeliveryStatus && (
-                    <div className="col-span-2 sm:col-span-3 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center gap-1.5 text-[11px]">
-                      <MailCheck className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
-                      <span className="text-slate-600 dark:text-slate-300">
-                        {promoCode.emailDeliveryStatus === 'sent'
-                          ? t('promo.emailDelivered', { email: promoCode.customerEmail || customer.email || '' })
-                          : promoCode.emailDeliveryStatus === 'not_configured'
-                          ? t('promo.emailNotConfigured')
-                          : t('promo.emailFailed')}
-                      </span>
+                    <div className="col-span-2 sm:col-span-3 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <MailCheck className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
+                        <span className="text-slate-600 dark:text-slate-300">
+                          {promoCode.emailDeliveryStatus === 'sent'
+                            ? t('promo.emailDelivered', { email: promoCode.customerEmail || customer.email || '' })
+                            : promoCode.emailDeliveryStatus === 'not_configured'
+                            ? t('promo.emailNotConfigured')
+                            : t('promo.emailFailed')}
+                        </span>
+                      </div>
+
+                      {onResendWelcomeEmail && customer.email && (
+                        <button
+                          type="button"
+                          disabled={isResending}
+                          onClick={handleResendPromo}
+                          className="px-2 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-cyan-300 rounded font-bold text-[10px] transition-colors flex items-center gap-1 self-start sm:self-auto cursor-pointer disabled:opacity-50"
+                        >
+                          {isResending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                          <span>{t('promo.resendEmail')}</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {resendStatusMessage && (
+                    <div className="col-span-2 sm:col-span-3 p-2 bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 rounded-lg text-[11px] text-blue-900 dark:text-cyan-300">
+                      {resendStatusMessage}
                     </div>
                   )}
                 </div>

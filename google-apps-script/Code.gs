@@ -174,7 +174,49 @@ function doPost(e) {
 function doGet(e) {
   var params = (e && e.parameter) ? e.parameter : {};
   
-  // Instant test URL: https://script.google.com/macros/s/.../exec?test=1
+  // 1. Support triggering a welcome discount email via GET (useful for browser testing)
+  if (params.type === 'welcome_discount' || params.action === 'welcome_discount' || params.testWelcome) {
+    var recipient = (params.customerEmail || params.email || PRIMARY_EMAIL).toString().trim();
+    var promoCode = (params.promoCode || 'WELCOME15-TEST').toString().trim();
+    var businessName = (params.businessName || 'My Car Wash').toString().trim();
+    var customerFirstName = (params.customerName || 'Valued Customer').toString().trim().split(' ')[0];
+    var discountPercent = params.discountPercent || 15;
+    var expirationDate = (params.expirationDate || '3 months from signup').toString().trim();
+    var language = (params.language || 'en').toString().toLowerCase();
+
+    var isSpanish = (language === 'es');
+    var subject = isSpanish
+      ? '¡Bienvenido a ' + businessName + '! Tu código de descuento del ' + discountPercent + '%'
+      : 'Welcome to ' + businessName + '! Your ' + discountPercent + '% Welcome Discount';
+
+    var plainBody = 'Welcome to ' + businessName + '!\n\nYour 15% discount code is: ' + promoCode + '\nValid until: ' + expirationDate;
+    var htmlBody = 
+      '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">' +
+      '  <h1 style="color: #0284c7; font-size: 24px;">' + escapeHtml(businessName) + '</h1>' +
+      '  <h2>Welcome, ' + escapeHtml(customerFirstName) + '!</h2>' +
+      '  <p>Here is your exclusive 15% welcome discount code:</p>' +
+      '  <div style="background: #f0f9ff; border: 2px dashed #0284c7; padding: 16px; text-align: center; border-radius: 8px;">' +
+      '    <span style="font-size: 26px; font-weight: bold; color: #0284c7; font-family: monospace;">' + escapeHtml(promoCode) + '</span>' +
+      '    <p style="margin: 6px 0 0 0; color: #64748b; font-size: 12px;">Valid until: ' + escapeHtml(expirationDate) + '</p>' +
+      '  </div>' +
+      '</div>';
+
+    try {
+      sendDirectEmail(recipient, subject, plainBody, htmlBody, businessName);
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'success',
+        message: 'Welcome discount test email dispatched to ' + recipient,
+        promoCode: promoCode
+      })).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'error',
+        message: err.toString()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // 2. Instant test URL: https://script.google.com/macros/s/.../exec?test=1
   if (params.test || params.sendTest) {
     try {
       var subject = 'Test Email - Car Wash Service';
@@ -257,4 +299,28 @@ function testSendInEditor() {
     'test@example.com'
   );
   Logger.log('Email sent successfully to ' + PRIMARY_EMAIL);
+}
+
+/**
+ * Test Welcome Promo Email directly from Apps Script Editor:
+ * 1. Select 'testWelcomeEmailInEditor'
+ * 2. Click 'Run'
+ * 3. Check your inbox for the 15% discount email!
+ */
+function testWelcomeEmailInEditor() {
+  var testEmail = PRIMARY_EMAIL;
+  var subject = 'Welcome to My Car Wash! Your 15% Welcome Discount (Editor Test)';
+  var body = 'Welcome!\n\nYour 15% Welcome Discount Code is: WELCOME15-EDITOR\nValid for 3 months from today.';
+  var html = 
+    '<div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; max-width: 500px;">' +
+    '  <h2 style="color: #0284c7;">Welcome to My Car Wash!</h2>' +
+    '  <p>Here is your test welcome discount code:</p>' +
+    '  <div style="background: #f0f9ff; border: 2px dashed #0284c7; padding: 15px; text-align: center; border-radius: 8px;">' +
+    '    <span style="font-size: 24px; font-weight: bold; color: #0284c7; font-family: monospace;">WELCOME15-EDITOR</span>' +
+    '    <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">15% OFF - Single use</p>' +
+    '  </div>' +
+    '</div>';
+
+  sendDirectEmail(testEmail, subject, body, html, 'My Car Wash');
+  Logger.log('Welcome discount test email sent directly to ' + testEmail);
 }

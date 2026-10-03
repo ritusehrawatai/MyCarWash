@@ -601,6 +601,45 @@ export default function App() {
     return newCode;
   };
 
+  const handleResendWelcomePromoEmail = async (
+    promo: WelcomePromoCode,
+    targetEmail: string
+  ): Promise<{ success: boolean; status: 'sent' | 'not_configured' | 'failed'; detail: string }> => {
+    const endpointUrl = getEnquiryEndpoint(settings.business);
+    const result = await sendWelcomeDiscountEmail({
+      endpointUrl,
+      businessName: settings.business.businessName || 'My Car Wash',
+      customerName: promo.customerName || 'Valued Customer',
+      customerEmail: targetEmail.trim(),
+      promoCode: promo.code,
+      discountPercent: promo.discountPercent || 15,
+      expirationDate: new Date(promo.expiresAt).toLocaleDateString(),
+      language: 'en',
+    });
+
+    setPromoCodes((prev) => {
+      const updated = prev.map((p) =>
+        p.code === promo.code
+          ? {
+              ...p,
+              customerEmail: targetEmail.trim(),
+              emailDeliveryStatus: result.status,
+              emailDeliveryDetail: result.detail,
+              emailSentAt: result.status === 'sent' ? new Date().toISOString() : p.emailSentAt,
+            }
+          : p
+      );
+      try {
+        localStorage.setItem(STORAGE_PROMO_CODES_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save promo codes:', e);
+      }
+      return updated;
+    });
+
+    return result;
+  };
+
   const handleCustomerLoginSuccess = (user: AuthUser) => {
     try {
       localStorage.setItem('my_car_wash_last_customer_email', user.email.toLowerCase());
@@ -1096,6 +1135,8 @@ export default function App() {
           onNavigateMemberships={() => setCurrentView('memberships')}
           onCancelMembership={handleCancelMembership}
           onLogout={handleLogout}
+          onResendWelcomeEmail={handleResendWelcomePromoEmail}
+          emailEndpointConfigured={!!getEnquiryEndpoint(settings.business)}
         />
 
         {/* Customer's Add/Edit Vehicle Modal */}
@@ -1247,6 +1288,7 @@ export default function App() {
             memberships={memberships}
             promoCodes={promoCodes}
             onGeneratePromoCode={handleGeneratePromoCodeForCustomer}
+            onResendWelcomeEmail={handleResendWelcomePromoEmail}
             onAddCustomer={handleAddCustomer}
             onUpdateCustomer={handleUpdateCustomer}
             onSaveVehicle={handleSaveVehicle}

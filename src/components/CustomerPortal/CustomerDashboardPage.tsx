@@ -19,6 +19,13 @@ import {
   Tag,
   Copy,
   Check,
+  MailCheck,
+  Send,
+  Loader2,
+  AlertCircle,
+  HelpCircle,
+  X,
+  ExternalLink,
 } from 'lucide-react';
 import {
   Customer,
@@ -52,6 +59,11 @@ interface CustomerDashboardPageProps {
   onNavigateMemberships?: () => void;
   onCancelMembership?: (membershipId: string) => void;
   onLogout: () => void;
+  onResendWelcomeEmail?: (
+    promo: WelcomePromoCode,
+    targetEmail: string
+  ) => Promise<{ success: boolean; status: 'sent' | 'not_configured' | 'failed'; detail: string }>;
+  emailEndpointConfigured?: boolean;
 }
 
 export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
@@ -69,16 +81,58 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
   onNavigateMemberships,
   onCancelMembership,
   onLogout,
+  onResendWelcomeEmail,
+  emailEndpointConfigured = false,
 }) => {
   const { t, formatDate, formatDateTime, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'membership' | 'vehicles' | 'history'>('overview');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [resendNotification, setResendNotification] = useState<{ success: boolean; message: string } | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleResend = async () => {
+    if (!promoCode || !onResendWelcomeEmail) return;
+    const targetEmail = promoCode.customerEmail || customer?.email || user.email;
+    setIsResendingEmail(true);
+    setResendNotification(null);
+    try {
+      const res = await onResendWelcomeEmail(promoCode, targetEmail);
+      if (res.status === 'sent') {
+        setResendNotification({
+          success: true,
+          message: t('promo.emailResentSuccess', { email: targetEmail }),
+        });
+      } else if (res.status === 'not_configured') {
+        setResendNotification({
+          success: false,
+          message: t('promo.emailNotConfigured'),
+        });
+        setShowConfigModal(true);
+      } else {
+        setResendNotification({
+          success: false,
+          message: res.detail || t('promo.emailResendFailed'),
+        });
+      }
+    } catch {
+      setResendNotification({
+        success: false,
+        message: t('promo.emailResendFailed'),
+      });
+    } finally {
+      setIsResendingEmail(false);
+      setTimeout(() => {
+        setResendNotification(null);
+      }, 7000);
+    }
   };
 
   const effectiveStatus = promoCode ? getEffectivePromoStatus(promoCode) : null;
@@ -385,6 +439,100 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* Email Delivery Status & Resend / Guidance Footer */}
+                  <div className="mt-4 pt-3.5 border-t border-blue-200/60 dark:border-cyan-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      {promoCode.emailDeliveryStatus === 'sent' ? (
+                        <>
+                          <MailCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span className="text-slate-700 dark:text-slate-200">
+                            {t('promo.emailDelivered', { email: promoCode.customerEmail || customer?.email || user.email })}
+                            {promoCode.emailSentAt && (
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-1.5 font-medium">
+                                ({new Date(promoCode.emailSentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                              </span>
+                            )}
+                          </span>
+                        </>
+                      ) : promoCode.emailDeliveryStatus === 'not_configured' ? (
+                        <>
+                          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span className="text-amber-900 dark:text-amber-200 font-medium">
+                            {t('promo.emailNotConfigured')}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                          <span className="text-rose-800 dark:text-rose-200 font-medium">
+                            {t('promo.emailFailed')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {promoCode.emailDeliveryStatus === 'not_configured' && (
+                        <button
+                          type="button"
+                          onClick={() => setShowConfigModal(true)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 dark:text-amber-300 hover:underline cursor-pointer"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" />
+                          <span>Why wasn't email sent?</span>
+                        </button>
+                      )}
+
+                      {onResendWelcomeEmail && (
+                        <button
+                          type="button"
+                          disabled={isResendingEmail}
+                          onClick={handleResend}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 text-xs"
+                        >
+                          {isResendingEmail ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>{t('promo.resending')}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-3.5 h-3.5" />
+                              <span>{promoCode.emailDeliveryStatus === 'sent' ? t('promo.resendEmail') : t('promo.sendEmail')}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Resend Feedback Notification */}
+                  {resendNotification && (
+                    <div
+                      className={`mt-3 p-3 rounded-xl text-xs flex items-center justify-between gap-2 transition-all ${
+                        resendNotification.success
+                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                          : 'bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {resendNotification.success ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        )}
+                        <span>{resendNotification.message}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setResendNotification(null)}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-0.5"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -858,6 +1006,60 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
           )}
         </div>
       </main>
+
+      {/* Email Delivery Explanation Modal */}
+      {showConfigModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <AlertCircle className="w-5 h-5" />
+                <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                  Why Wasn't the Email Received?
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowConfigModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p>
+                <strong>Don't worry — your 15% discount is completely active!</strong>
+              </p>
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-center space-y-1">
+                <span className="text-[10px] font-bold uppercase text-blue-600 dark:text-cyan-400 tracking-wider">Your Active Promo Code</span>
+                <span className="block font-mono text-xl font-black text-blue-700 dark:text-cyan-300">
+                  {promoCode?.code}
+                </span>
+                <span className="text-[11px] text-blue-600 dark:text-cyan-400">
+                  Mention this code at checkout for 15% off before tax!
+                </span>
+              </div>
+              <p>
+                Automated email dispatch uses the <strong>Google Apps Script Web App</strong> integration. If the store administrator has not yet added the Web App URL in <strong>Settings → Business Info</strong>, emails cannot be delivered outside the system.
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Store administrators can deploy the free script included in the codebase (under <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">google-apps-script/Code.gs</code>) to enable automated emails.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowConfigModal(false)}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
