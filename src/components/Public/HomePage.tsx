@@ -18,8 +18,6 @@ import {
 } from 'lucide-react';
 import { POSServiceItem, BusinessInfo } from '../../types/pos';
 import { formatCurrency } from '../../data/constants';
-import { ThemeToggle } from '../ThemeToggle';
-import { LanguageToggle } from '../LanguageToggle';
 import { useLanguage } from '../../context/LanguageContext';
 import { HeroSlideshow } from './HeroSlideshow';
 import { PublicHeader } from './PublicHeader';
@@ -470,19 +468,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           </div>
 
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-[11px]">
+          <div className="pt-8 text-center sm:text-left text-slate-500 text-[11px]">
             <p>© {new Date().getFullYear()} {businessInfo.businessName || 'Car Wash POS'}. {t('home.footerRights')}</p>
-            <div className="flex items-center gap-3">
-              <LanguageToggle variant="compact" />
-              <ThemeToggle variant="compact" />
-              <button
-                type="button"
-                onClick={onNavigateAdminLogin}
-                className="hover:text-slate-300 transition-colors cursor-pointer"
-              >
-                {t('home.staffAdminPortalLink')}
-              </button>
-            </div>
           </div>
         </div>
       </footer>

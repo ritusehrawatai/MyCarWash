@@ -743,7 +743,7 @@ export const en = {
     contactAndVisit: 'Contact & Visit',
     accessPortals: 'Access Portals',
     customerAccountPortal: 'Customer Account Portal',
-    adminCashierLogin: 'Administration & Cashier Login',
+    adminCashierLogin: 'Administration & Staff Login',
     expressLane3Min: '3 Mins',
     expressLaneLabel: 'Express Wash Lane',
     spotFreeFinish: 'Spot-Free Finish',

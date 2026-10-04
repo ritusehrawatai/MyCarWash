@@ -743,7 +743,7 @@ export const es = {
     contactAndVisit: 'Contacto y Ubicación',
     accessPortals: 'Portales de Acceso',
     customerAccountPortal: 'Portal de Cuenta de Cliente',
-    adminCashierLogin: 'Acceso Administrativo y Cajero',
+    adminCashierLogin: 'Acceso de Administración y Personal',
     expressLane3Min: '3 Mins',
     expressLaneLabel: 'Carril de Lavado Exprés',
     spotFreeFinish: 'Acabado sin Manchas',
