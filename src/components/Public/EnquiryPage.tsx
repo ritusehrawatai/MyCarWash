@@ -343,24 +343,32 @@ function testSendInEditor() {
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
           {/* Brand Logo */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onNavigateHome}
-              className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 cursor-pointer hover:scale-105 transition-transform"
-              title={t('enquiry.backToHome')}
-            >
+          <button
+            type="button"
+            onClick={onNavigateHome}
+            className="flex items-center gap-3 text-left cursor-pointer group"
+            title={businessInfo.businessName || 'AquaShine'}
+            aria-label={businessInfo.businessName || 'AquaShine'}
+          >
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform shrink-0">
               <Sparkles className="w-6 h-6 text-white" />
-            </button>
+            </div>
             <div>
-              <span className="text-lg sm:text-xl font-black tracking-tight text-slate-950 dark:text-white block">
-                {businessInfo.businessName || 'ShineExpress Car Wash'}
+              <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 dark:text-white block group-hover:text-blue-600 dark:group-hover:text-cyan-400 transition-colors">
+                {(!businessInfo.businessName || businessInfo.businessName === 'AquaShine' || businessInfo.businessName === 'My Car Wash' || businessInfo.businessName === 'ShineExpress Car Wash') ? (
+                  <span className="inline-flex items-center">
+                    <span>Aqua</span>
+                    <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent font-extrabold">Shine</span>
+                  </span>
+                ) : (
+                  businessInfo.businessName
+                )}
               </span>
               <span className="text-[11px] text-blue-600 dark:text-cyan-400 font-semibold tracking-wider uppercase block">
-                {t('enquiry.headerBadge')}
+                The Ultimate Shine, Every Single Time
               </span>
             </div>
-          </div>
+          </button>
 
           {/* Action Buttons, Language & Theme Toggle */}
           <div className="flex items-center gap-2 sm:gap-3">

@@ -117,6 +117,21 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   {transaction.customerNameAtSale || t('pos.guestCustomer')}
                 </span>
               </div>
+              {transaction.serviceAttendantName && (
+                <div className="flex justify-between">
+                  <span>Washed By:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {transaction.serviceAttendantName}
+                    {transaction.serviceAttendantEmployeeId ? ` (${transaction.serviceAttendantEmployeeId})` : ''}
+                  </span>
+                </div>
+              )}
+              {transaction.processedByName && (
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Cashier:</span>
+                  <span>{transaction.processedByName}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>{t('receipt.paymentMethod')}:</span>
                 <span className="font-bold text-slate-900 dark:text-white">

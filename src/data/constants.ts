@@ -1,13 +1,13 @@
 import { POSServiceItem, POSVehicleType, BusinessInfo, POSSettings, PaymentMethod } from '../types/pos';
 
-export const BUSINESS_NAME = 'My Car Wash';
+export const BUSINESS_NAME = 'AquaShine';
 export const DEFAULT_TAX_RATE = 0.0825; // 8.25%
 
 export const DEFAULT_BUSINESS_INFO: BusinessInfo = {
-  businessName: 'My Car Wash',
+  businessName: 'AquaShine',
   address: '123 Main Street',
   phone: '(555) 123-4567',
-  email: 'contact@mycarwash.com',
+  email: 'contact@aquashine.com',
   receiptFooter: 'Thank you for visiting! Drive safe & shine bright.',
 };
 

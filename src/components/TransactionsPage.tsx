@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { ReceiptText, Users } from 'lucide-react';
 import { TodaySummary } from './TodaySummary';
 import {
   TransactionFilters,
@@ -8,7 +9,9 @@ import {
 } from './TransactionFilters';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionDetailsModal } from './TransactionDetailsModal';
-import { Transaction, UserRole } from '../types/pos';
+import { EmployeeReportsSection } from './Admin/EmployeeReportsSection';
+import { Transaction, UserRole, POSServiceItem } from '../types/pos';
+import { UserAccount } from '../services/authService';
 import { useLanguage } from '../context/LanguageContext';
 
 interface TransactionsPageProps {
@@ -17,6 +20,8 @@ interface TransactionsPageProps {
   onPrintReceipt: (transaction: Transaction) => void;
   onStartNewWash: () => void;
   userRole?: UserRole;
+  accounts?: UserAccount[];
+  services?: POSServiceItem[];
 }
 
 export const TransactionsPage: React.FC<TransactionsPageProps> = ({
@@ -25,8 +30,13 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
   onPrintReceipt,
   onStartNewWash,
   userRole = 'admin',
+  accounts = [],
+  services = [],
 }) => {
   const { t } = useLanguage();
+  // View Switcher: Transactions List vs Employee Service Reports (Admin only)
+  const [subView, setSubView] = useState<'transactions' | 'employee_reports'>('transactions');
+
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilterOption>('today');
@@ -157,8 +167,59 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 2. Today's Summary */}
-      <TodaySummary transactions={transactions} />
+      {/* Admin View Switcher: All Transactions vs Employee Service Reports */}
+      {userRole === 'admin' && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-2 flex items-center justify-between gap-3 transition-colors duration-200">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setSubView('transactions')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                subView === 'transactions'
+                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <ReceiptText className="w-4 h-4" />
+              <span>All Transactions</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded font-extrabold bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300">
+                {transactions.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSubView('employee_reports')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                subView === 'employee_reports'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Users className="w-4 h-4 text-cyan-400" />
+              <span>Employee Service Reports</span>
+            </button>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2 pr-3 text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <span>Admin Reporting Portal</span>
+          </div>
+        </div>
+      )}
+
+      {/* Render Employee Reports Section if selected by Admin */}
+      {subView === 'employee_reports' && userRole === 'admin' ? (
+        <EmployeeReportsSection
+          transactions={transactions}
+          accounts={accounts}
+          services={services}
+          onSelectTransaction={(tx) => setSelectedTransaction(tx)}
+          onPrintReceipt={onPrintReceipt}
+        />
+      ) : (
+        <>
+          {/* 2. Today's Summary */}
+          <TodaySummary transactions={transactions} />
 
       {/* 3 & 4. Search and Filters */}
       <TransactionFilters
@@ -192,6 +253,8 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
           hasFiltersActive={activeFilterCount > 0}
         />
       </div>
+    </>
+  )}
 
       {/* 5, 6, 7. Transaction Details Modal (with Print Receipt and Void actions) */}
       <TransactionDetailsModal

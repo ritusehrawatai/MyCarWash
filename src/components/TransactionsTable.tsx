@@ -105,6 +105,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
               <th className="py-3.5 px-4">{t('transactions.receiptCol')}</th>
               <th className="py-3.5 px-3">{t('common.date')}</th>
               <th className="py-3.5 px-3">{t('transactions.customerCol')}</th>
+              <th className="py-3.5 px-3">Attendant</th>
               <th className="py-3.5 px-4">{t('transactions.serviceCol')}</th>
               <th className="py-3.5 px-3">{t('transactions.vehicleCol')}</th>
               <th className="py-3.5 px-3">{t('transactions.addOnsCol')}</th>
@@ -152,6 +153,18 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                     {tx.customerId && (
                       <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
                         {tx.customerId}
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Attendant */}
+                  <td className="py-3 px-3">
+                    <span className="font-semibold text-slate-900 dark:text-white block truncate max-w-[120px]">
+                      {tx.serviceAttendantName || <span className="text-slate-400 font-normal italic">Unassigned</span>}
+                    </span>
+                    {tx.serviceAttendantEmployeeId && (
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                        {tx.serviceAttendantEmployeeId}
                       </span>
                     )}
                   </td>
@@ -268,9 +281,16 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
               </div>
 
               {/* Customer info if present */}
-              <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
-                <User className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                <span className="font-semibold">{tx.customerNameAtSale || t('pos.guestCustomer')}</span>
+              <div className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300">
+                <div className="flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                  <span className="font-semibold">{tx.customerNameAtSale || t('pos.guestCustomer')}</span>
+                </div>
+                {tx.serviceAttendantName && (
+                  <span className="text-[11px] font-mono text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-200 dark:border-cyan-800">
+                    Attendant: {tx.serviceAttendantName}
+                  </span>
+                )}
               </div>
 
               {/* Service & Total */}

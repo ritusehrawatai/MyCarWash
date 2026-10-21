@@ -109,6 +109,7 @@ export type PaymentMethod = 'CASH' | 'DEBIT_CARD' | 'CREDIT_CARD' | 'CARD' | 'ME
 export type TransactionStatus = 'completed' | 'voided';
 
 export type UserRole = 'admin' | 'cashier' | 'customer';
+export type EmployeeRole = 'admin' | 'cashier';
 
 export interface AuthUser {
   id: string;
@@ -116,6 +117,22 @@ export interface AuthUser {
   name: string;
   role: UserRole;
   customerId?: string; // Connected customer profile ID if customer
+  employeeId?: string; // System-generated employee ID for staff (e.g. EMP-1001)
+}
+
+/**
+ * Employee Profile (Admin or Cashier/Attendant)
+ */
+export interface Employee {
+  id: string; // e.g. USR-ADMIN-1
+  employeeId: string; // System-generated unique Employee ID e.g. 'EMP-1001'
+  name: string;
+  email: string;
+  role: EmployeeRole; // Restricted strictly to 'admin' or 'cashier'
+  active: boolean;
+  phone?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 /**
@@ -162,6 +179,15 @@ export interface Transaction {
   vehicleId?: string;
   vehicleDescriptionAtSale?: string; // e.g. "2023 White Toyota Camry [ABC123]"
   vehicleTypeAtSale?: string; // e.g. "Car" or "SUV / Truck"
+
+  // Employee Attribution References (Additive)
+  serviceAttendantId?: string; // UserAccount/Employee id who performed the service
+  serviceAttendantName?: string; // Full name of attendant at sale
+  serviceAttendantEmployeeId?: string; // System Employee ID (e.g. EMP-1002)
+  serviceAttendantRole?: EmployeeRole; // Attendant role ('admin' | 'cashier')
+  processedById?: string; // Staff member who processed the payment at register
+  processedByName?: string; // Full name of cashier/staff who took payment
+  processedByRole?: UserRole; // Staff role at register
 
   // Membership References (Additive)
   membershipId?: string;

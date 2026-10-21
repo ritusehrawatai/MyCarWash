@@ -123,7 +123,24 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 4. ACTION B: Standard Enquiry Form Message
+    // 4. ACTION B: Daily Employee Service Report Email to Admin
+    if (data.type === 'daily_service_report' || data.action === 'daily_service_report') {
+      var reportRecipient = (data.recipient || PRIMARY_EMAIL).toString().trim();
+      var reportSubject = (data.subject || 'Daily Employee Service Report').toString().trim();
+      var reportHtml = data.htmlBody || '<p>Daily report generated.</p>';
+      var reportPlain = data.plainBody || 'Daily report generated.';
+      var bName = (data.businessName || 'AquaShine').toString().trim();
+
+      sendDirectEmail(reportRecipient, reportSubject, reportPlain, reportHtml, bName);
+
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'success',
+        message: 'Daily employee service report successfully dispatched to ' + reportRecipient,
+        recipient: reportRecipient
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 5. ACTION C: Standard Enquiry Form Message
     var name = (data.name || 'Website Visitor').toString().trim();
     var email = (data.email || 'no-reply@example.com').toString().trim();
     var phone = (data.phone || 'Not provided').toString().trim();

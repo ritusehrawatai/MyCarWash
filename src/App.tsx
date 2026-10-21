@@ -43,6 +43,7 @@ import {
   CustomerMembership,
   MembershipUsage,
   WelcomePromoCode,
+  EmployeeRole,
 } from './types/pos';
 import {
   DEFAULT_SETTINGS,
@@ -70,7 +71,10 @@ import {
   STORAGE_CURRENT_USER_KEY,
   INITIAL_ACCOUNTS,
   hashPassword,
+  ensureEmployeeAccounts,
 } from './services/authService';
+import { INITIAL_TRANSACTIONS } from './data/mockTransactions';
+import { AttendantSelector } from './components/AttendantSelector';
 import {
   STORAGE_PROMO_CODES_KEY,
   INITIAL_PROMO_CODES,
@@ -91,7 +95,9 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_AUTH_ACCOUNTS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return ensureEmployeeAccounts(parsed);
+        }
       }
     } catch (e) {
       console.error('Error reading accounts from localStorage:', e);
@@ -112,6 +118,18 @@ export default function App() {
     }
     return null;
   });
+
+  // Selected Attendant for New Wash attribution
+  const [selectedAttendantId, setSelectedAttendantId] = useState<string>(() => {
+    return 'USR-CASHIER-1';
+  });
+
+  // Keep selected attendant in sync with current staff user
+  useEffect(() => {
+    if (currentUser && (currentUser.role === 'cashier' || currentUser.role === 'admin')) {
+      setSelectedAttendantId(currentUser.id);
+    }
+  }, [currentUser]);
 
   // Current Active Top-Level View
   const [currentView, setCurrentView] = useState<AppView>(() => {
@@ -142,6 +160,9 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_SETTINGS_KEY);
       if (saved) {
         const parsed: POSSettings = JSON.parse(saved);
+        if (parsed.business && (!parsed.business.businessName || parsed.business.businessName === 'My Car Wash')) {
+          parsed.business.businessName = 'AquaShine';
+        }
         return {
           business: { ...DEFAULT_SETTINGS.business, ...parsed.business },
           services: parsed.services && parsed.services.length > 0 ? parsed.services : DEFAULT_SETTINGS.services,
@@ -189,15 +210,17 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_TRANSACTIONS_KEY);
       if (saved) {
         const parsed: Transaction[] = JSON.parse(saved);
-        return parsed.map((t) => ({
-          ...t,
-          status: t.status || 'completed',
-        }));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((t) => ({
+            ...t,
+            status: t.status || 'completed',
+          }));
+        }
       }
     } catch (e) {
       console.error('Error reading transactions from localStorage:', e);
     }
-    return [];
+    return INITIAL_TRANSACTIONS;
   });
 
   // Membership Plans Collection State
@@ -362,6 +385,25 @@ export default function App() {
       console.error('Failed to save settings to localStorage:', e);
     }
   }, [settings]);
+
+  // Sync POS Data to backend for reliable scheduled report execution
+  useEffect(() => {
+    try {
+      fetch('/api/reports/sync-pos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactions,
+          accounts,
+          businessInfo: settings.business,
+        }),
+      }).catch(() => {
+        // Silent catch for dev transitions
+      });
+    } catch {
+      // Ignore
+    }
+  }, [transactions, accounts, settings.business]);
 
   useEffect(() => {
     try {
@@ -796,6 +838,22 @@ export default function App() {
       ? formatVehicleDescription(selectedCustomerVehicle)
       : selectedVehicle.name;
 
+    // Resolve Attendant (Service Performed By) vs Register Cashier
+    const assignedAttendant =
+      accounts.find((a) => a.id === selectedAttendantId) ||
+      accounts.find((a) => a.role === 'cashier' && a.active !== false) ||
+      accounts.find((a) => a.id === currentUser?.id) ||
+      accounts[0];
+
+    const serviceAttendantId = assignedAttendant?.id;
+    const serviceAttendantName = assignedAttendant?.name || currentUser?.name || 'Staff Attendant';
+    const serviceAttendantEmployeeId = assignedAttendant?.employeeId || currentUser?.employeeId || 'EMP-1002';
+    const serviceAttendantRole = (assignedAttendant?.role === 'admin' ? 'admin' : 'cashier') as EmployeeRole;
+
+    const processedById = currentUser?.id;
+    const processedByName = currentUser?.name || 'Cashier';
+    const processedByRole = currentUser?.role || 'cashier';
+
     const newTx: Transaction = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       receiptNumber: generateReceiptNumber(),
@@ -807,6 +865,15 @@ export default function App() {
       vehicleId: selectedCustomerVehicle?.id,
       vehicleDescriptionAtSale: vehicleDesc,
       vehicleTypeAtSale: selectedVehicle.name,
+
+      // Employee Attribution
+      serviceAttendantId,
+      serviceAttendantName,
+      serviceAttendantEmployeeId,
+      serviceAttendantRole,
+      processedById,
+      processedByName,
+      processedByRole,
 
       membershipId: activeCustomerMembership?.id,
       membershipPlanName: activeCustomerMembership?.planNameSnapshot,
@@ -901,6 +968,34 @@ export default function App() {
     setIsNewSaleCompletion(false);
     setIsRedeemingMembershipWash(false);
     handleResetOrder();
+  };
+
+  // Employee Management Handlers (Admin Only)
+  const handleSaveEmployee = (
+    account: UserAccount,
+    isNew: boolean
+  ): { success: boolean; error?: string } => {
+    if (currentUser?.role !== 'admin') {
+      return { success: false, error: 'Unauthorized: Only administrators can manage employees.' };
+    }
+
+    setAccounts((prev) => {
+      if (isNew) {
+        return [account, ...prev];
+      }
+      return prev.map((a) => (a.id === account.id ? account : a));
+    });
+
+    return { success: true };
+  };
+
+  const handleToggleEmployeeActive = (accountId: string) => {
+    if (currentUser?.role !== 'admin') return;
+    if (accountId === currentUser.id) return; // Prevent deactivating current logged-in user
+
+    setAccounts((prev) =>
+      prev.map((a) => (a.id === accountId ? { ...a, active: a.active === false ? true : false } : a))
+    );
   };
 
   // Membership Handlers
@@ -1227,6 +1322,14 @@ export default function App() {
                 vehicleTypes={settings.vehicleTypes}
               />
 
+              {/* Service Attendant Assignment Section */}
+              <AttendantSelector
+                accounts={accounts}
+                selectedAttendantId={selectedAttendantId}
+                onSelectAttendantId={setSelectedAttendantId}
+                currentUser={currentUser}
+              />
+
               {/* Step 1: Services */}
               <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors duration-200">
                 <ServiceSelector
@@ -1321,6 +1424,8 @@ export default function App() {
             onPrintReceipt={handlePrintReceipt}
             onStartNewWash={() => setActiveTab('pos')}
             userRole={currentRole}
+            accounts={accounts}
+            services={settings.services}
           />
         )}
 
@@ -1339,6 +1444,10 @@ export default function App() {
             onSaveMembershipPlan={handleSaveMembershipPlan}
             onTogglePlanActive={handleTogglePlanActive}
             onCancelMembership={handleCancelMembership}
+            accounts={accounts}
+            onSaveEmployee={handleSaveEmployee}
+            onToggleEmployeeActive={handleToggleEmployeeActive}
+            currentUserId={currentUser?.id}
           />
         )}
       </main>

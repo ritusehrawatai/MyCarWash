@@ -20,6 +20,8 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Users,
+  Mail,
 } from 'lucide-react';
 import {
   POSSettings,
@@ -31,10 +33,13 @@ import {
   CustomerMembership,
   MembershipUsage,
 } from '../../types/pos';
+import { UserAccount } from '../../services/authService';
 import { formatCurrency } from '../../data/constants';
 import { ServiceModal } from './ServiceModal';
 import { VehicleModal } from './VehicleModal';
 import { MembershipManagementSection } from '../Admin/MembershipManagementSection';
+import { EmployeeManagementSection } from '../Admin/EmployeeManagementSection';
+import { DailyEmailReportsSection } from '../Admin/DailyEmailReportsSection';
 import { useLanguage } from '../../context/LanguageContext';
 import { testWelcomePromoEmail } from '../../services/promoService';
 
@@ -52,9 +57,13 @@ interface SettingsPageProps {
   onTogglePlanActive?: (planId: string) => void;
   onCancelMembership?: (membershipId: string) => void;
   initialSubTab?: SettingsSubTab;
+  accounts?: UserAccount[];
+  onSaveEmployee?: (account: UserAccount, isNew: boolean) => { success: boolean; error?: string };
+  onToggleEmployeeActive?: (accountId: string) => void;
+  currentUserId?: string;
 }
 
-type SettingsSubTab = 'all' | 'business' | 'services' | 'vehicles' | 'tax' | 'memberships';
+type SettingsSubTab = 'all' | 'business' | 'services' | 'vehicles' | 'tax' | 'memberships' | 'employees' | 'daily_reports';
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
   settings,
@@ -70,6 +79,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onTogglePlanActive,
   onCancelMembership,
   initialSubTab = 'all',
+  accounts = [],
+  onSaveEmployee,
+  onToggleEmployeeActive,
+  currentUserId,
 }) => {
   const { t } = useLanguage();
   const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>(initialSubTab);
@@ -312,7 +325,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col gap-3 sm:gap-4 pb-3 border-b border-slate-200 dark:border-slate-800">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
             <span>{t('settings.pageTitle')}</span>
@@ -323,14 +336,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         </div>
 
         {/* Section Jump Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-slate-200/70 dark:bg-slate-800 rounded-xl overflow-x-auto text-xs font-semibold">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 w-full pt-1">
           <button
             type="button"
             onClick={() => setActiveSubTab('all')}
-            className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center cursor-pointer shadow-xs border ${
               activeSubTab === 'all'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-blue-600 border-blue-600 text-white shadow-sm font-extrabold'
+                : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-cyan-400'
             }`}
           >
             {t('settings.tabAll')}
@@ -338,10 +351,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab('business')}
-            className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center cursor-pointer shadow-xs border ${
               activeSubTab === 'business'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-blue-600 border-blue-600 text-white shadow-sm font-extrabold'
+                : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-cyan-400'
             }`}
           >
             {t('settings.businessAndReceiptTab')}
@@ -349,10 +362,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab('services')}
-            className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center cursor-pointer shadow-xs border ${
               activeSubTab === 'services'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-blue-600 border-blue-600 text-white shadow-sm font-extrabold'
+                : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-cyan-400'
             }`}
           >
             {t('settings.servicesAndPricesTab')}
@@ -360,10 +373,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab('vehicles')}
-            className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center cursor-pointer shadow-xs border ${
               activeSubTab === 'vehicles'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-blue-600 border-blue-600 text-white shadow-sm font-extrabold'
+                : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-cyan-400'
             }`}
           >
             {t('settings.vehiclesTab')}
@@ -371,10 +384,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab('tax')}
-            className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center cursor-pointer shadow-xs border ${
               activeSubTab === 'tax'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-blue-600 border-blue-600 text-white shadow-sm font-extrabold'
+                : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-cyan-400'
             }`}
           >
             {t('settings.taxRateTab')}
@@ -382,13 +395,48 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab('memberships')}
-            className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center cursor-pointer shadow-xs border ${
               activeSubTab === 'memberships'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-blue-600 border-blue-600 text-white shadow-sm font-extrabold'
+                : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-cyan-400'
             }`}
           >
             {t('settings.tabMemberships')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('employees')}
+            className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-xs border ${
+              activeSubTab === 'employees'
+                ? 'bg-blue-600 border-blue-600 text-white shadow-sm font-extrabold'
+                : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-cyan-400'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5 shrink-0" />
+            <span>Employees</span>
+            {accounts.filter((a) => a.role === 'admin' || a.role === 'cashier').length > 0 && (
+              <span
+                className={`text-[10px] font-mono px-1 rounded font-bold ${
+                  activeSubTab === 'employees'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {accounts.filter((a) => a.role === 'admin' || a.role === 'cashier').length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('daily_reports')}
+            className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-xs border ${
+              activeSubTab === 'daily_reports'
+                ? 'bg-cyan-600 border-cyan-600 text-white shadow-sm font-extrabold'
+                : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-cyan-500 hover:text-cyan-600 dark:hover:text-cyan-400'
+            }`}
+          >
+            <Mail className="w-3.5 h-3.5 shrink-0" />
+            <span>Daily Reports Email</span>
           </button>
         </div>
       </div>
@@ -1211,6 +1259,31 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             onSavePlan={onSaveMembershipPlan || (() => {})}
             onTogglePlanActive={onTogglePlanActive || (() => {})}
             onCancelMembership={onCancelMembership || (() => {})}
+          />
+        </section>
+      )}
+
+      {/* 6. Employee Management Section */}
+      {(activeSubTab === 'all' || activeSubTab === 'employees') && onSaveEmployee && onToggleEmployeeActive && (
+        <section className="pt-2">
+          <EmployeeManagementSection
+            accounts={accounts}
+            transactions={transactions}
+            onSaveEmployee={onSaveEmployee}
+            onToggleEmployeeActive={onToggleEmployeeActive}
+            currentUserId={currentUserId}
+          />
+        </section>
+      )}
+
+      {/* 7. Daily Email Reports Section */}
+      {(activeSubTab === 'all' || activeSubTab === 'daily_reports') && (
+        <section className="pt-2">
+          <DailyEmailReportsSection
+            businessInfo={settings.business}
+            transactions={transactions}
+            accounts={accounts}
+            currentUserId={currentUserId}
           />
         </section>
       )}

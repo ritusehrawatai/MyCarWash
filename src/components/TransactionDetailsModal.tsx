@@ -170,6 +170,37 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
             )}
           </div>
 
+          {/* Employee Attribution Box */}
+          <div className="bg-slate-50 dark:bg-slate-800/80 rounded-xl p-3.5 border border-slate-200/70 dark:border-slate-700 grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                Service Attendant
+              </span>
+              <span className="font-bold text-slate-900 dark:text-white block mt-0.5">
+                {transaction.serviceAttendantName || 'Unassigned'}
+              </span>
+              {transaction.serviceAttendantEmployeeId && (
+                <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400">
+                  {transaction.serviceAttendantEmployeeId}
+                </span>
+              )}
+            </div>
+
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                Processed By (Cashier)
+              </span>
+              <span className="font-bold text-slate-900 dark:text-white block mt-0.5">
+                {transaction.processedByName || 'Register'}
+              </span>
+              {transaction.processedByRole && (
+                <span className="text-[10px] uppercase font-mono text-slate-500 dark:text-slate-400">
+                  {transaction.processedByRole}
+                </span>
+              )}
+            </div>
+          </div>
+
           {/* Membership Pass Badge if applied */}
           {transaction.membershipPlanName && (
             <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/40 rounded-xl p-3 border border-blue-200 dark:border-blue-800 flex items-center justify-between text-xs">

@@ -28,10 +28,14 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
 
     const cleanInput = identifier.trim().toLowerCase();
 
-    // Find staff account (Admin or Cashier)
+    // Find staff account (Admin or Cashier) by email, ID, or Employee ID
     const account = existingAccounts.find((a) => {
       if (a.role !== 'admin' && a.role !== 'cashier') return false;
-      return a.email.toLowerCase() === cleanInput || a.id.toLowerCase() === cleanInput;
+      return (
+        a.email.toLowerCase() === cleanInput ||
+        a.id.toLowerCase() === cleanInput ||
+        (a.employeeId && a.employeeId.toLowerCase() === cleanInput)
+      );
     });
 
     if (!account) {
@@ -44,11 +48,18 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
       return;
     }
 
+    // Security check: Deactivated employees cannot log in
+    if (account.active === false) {
+      setErrorMessage('This employee account has been deactivated. Please contact an administrator.');
+      return;
+    }
+
     const authUser: AuthUser = {
       id: account.id,
       email: account.email,
       name: account.name,
       role: account.role,
+      employeeId: account.employeeId,
     };
 
     onLoginSuccess(authUser);

@@ -159,24 +159,33 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
       {/* Top Customer Portal Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onNavigateHome}
-              className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 dark:from-cyan-400 dark:to-blue-600 flex items-center justify-center text-white dark:text-slate-950 font-bold shadow-md cursor-pointer hover:scale-105 transition-transform"
-              title={t('nav.backToHome')}
-            >
-              <Sparkles className="w-5 h-5 text-white dark:text-slate-950" />
-            </button>
+          <button
+            type="button"
+            onClick={onNavigateHome}
+            className="flex items-center gap-3 text-left cursor-pointer group"
+            title="AquaShine"
+            aria-label="AquaShine"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md group-hover:scale-105 transition-transform shrink-0">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
             <div>
-              <span className="font-extrabold text-base text-slate-900 dark:text-white block">
-                {t('dashboard.portalTitle')}
-              </span>
-              <span className="text-[11px] text-blue-600 dark:text-cyan-400 font-medium">
-                {t('dashboard.myAccount')}
+              <div className="flex items-center gap-2">
+                <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white block group-hover:text-blue-600 dark:group-hover:text-cyan-400 transition-colors">
+                  <span className="inline-flex items-center">
+                    <span>Aqua</span>
+                    <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent font-extrabold">Shine</span>
+                  </span>
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-cyan-300">
+                  {t('dashboard.portalTitle')}
+                </span>
+              </div>
+              <span className="text-[10px] sm:text-[11px] text-blue-600 dark:text-cyan-400 font-semibold tracking-wider uppercase block leading-none mt-0.5">
+                The Ultimate Shine, Every Single Time
               </span>
             </div>
-          </div>
+          </button>
 
           {/* Navigation, Language, Theme & Logout */}
           <div className="flex items-center gap-2 sm:gap-3">
@@ -320,7 +329,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
 
         {/* Dashboard Tabs: My Profile, My Membership, My Vehicles, Wash History */}
         <div className="space-y-6">
-          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 transition-colors overflow-x-auto">
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 transition-colors">
             <button
               type="button"
               onClick={() => setActiveTab('overview')}

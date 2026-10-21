@@ -53,11 +53,11 @@ export const Header: React.FC<HeaderProps> = ({
   // Dropdown & Mobile drawer state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const moreMenuRef = useRef<HTMLDivElement>(null);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const displayName = (!businessName || businessName === 'My Car Wash') ? 'AquaShine' : businessName;
 
   // Live timer update
   useEffect(() => {
@@ -74,15 +74,11 @@ export const Header: React.FC<HeaderProps> = ({
       if (moreMenuRef.current && !moreMenuRef.current.contains(target)) {
         setIsMoreMenuOpen(false);
       }
-      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
-        setIsProfileMenuOpen(false);
-      }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsMoreMenuOpen(false);
-        setIsProfileMenuOpen(false);
         setIsMobileMenuOpen(false);
       }
     };
@@ -118,8 +114,8 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onNavigateHome}
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-xs cursor-pointer hover:opacity-95 transition-opacity shrink-0"
-              title={businessName || 'My Car Wash'}
-              aria-label={businessName || 'My Car Wash'}
+              title={displayName}
+              aria-label={displayName}
             >
               <Sparkles className="w-5 h-5 text-white" />
             </button>
@@ -130,22 +126,20 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   onClick={onNavigateHome}
                   className="text-xs sm:text-base font-bold tracking-tight text-slate-900 dark:text-white leading-tight truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[220px] md:max-w-[260px] text-left hover:text-blue-600 dark:hover:text-cyan-400 transition-colors cursor-pointer"
-                  title={businessName || 'My Car Wash'}
+                  title={displayName}
                 >
-                  {businessName || 'My Car Wash'}
+                  {displayName === 'AquaShine' ? (
+                    <span className="inline-flex items-center">
+                      <span>Aqua</span>
+                      <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent font-extrabold">Shine</span>
+                    </span>
+                  ) : (
+                    displayName
+                  )}
                 </button>
-                <span
-                  className={`text-[9px] sm:text-[10px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 ${
-                    userRole === 'admin'
-                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                      : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                  }`}
-                >
-                  {userRole === 'admin' ? t('auth.roleAdmin') : t('auth.roleCashier')}
-                </span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden lg:block leading-none mt-0.5">
-                Express Register · Lane 1
+              <p className="text-[10px] sm:text-[11px] text-blue-600 dark:text-cyan-400 font-semibold tracking-wider uppercase block leading-none mt-1 truncate">
+                The Ultimate Shine, Every Single Time
               </p>
             </div>
           </div>
@@ -162,93 +156,6 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="hidden 2xl:flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-mono px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl">
               <Clock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
               <span>{time}</span>
-            </div>
-
-            {/* Desktop User Info & Logout (Desktop >= 1024px) */}
-            <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
-              {currentUser && (
-                <div className="text-right leading-tight max-w-[130px] xl:max-w-[170px] truncate">
-                  <span className="block text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {currentUser.name}
-                  </span>
-                  <span className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">
-                    {userRole === 'admin' ? t('auth.roleAdmin') : t('auth.roleCashier')}
-                  </span>
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={onLogout}
-                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-700 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                title={t('nav.logout')}
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>{t('nav.logout')}</span>
-              </button>
-            </div>
-
-            {/* Tablet User Account Menu Dropdown (768px - 1023px) */}
-            <div className="hidden md:flex lg:hidden relative" ref={profileMenuRef}>
-              <button
-                type="button"
-                onClick={() => setIsProfileMenuOpen((prev) => !prev)}
-                aria-expanded={isProfileMenuOpen}
-                aria-haspopup="true"
-                className="flex items-center gap-1.5 p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-                title={currentUser?.name || t('nav.userAccount')}
-              >
-                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                  {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-              </button>
-
-              {isProfileMenuOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 mt-2 w-56 py-2 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 z-50 animate-fade-in"
-                >
-                  <div className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {currentUser?.name || 'Administrator'}
-                    </p>
-                    <p className="text-[10px] text-blue-600 dark:text-cyan-400 font-semibold uppercase mt-0.5">
-                      {userRole === 'admin' ? t('auth.roleAdmin') : t('auth.roleCashier')}
-                    </p>
-                  </div>
-
-                  <div className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-800 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Percent className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{t('common.tax')}</span>
-                      </span>
-                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                        {(taxRate * 100).toFixed(2)}%
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{t('home.time')}</span>
-                      </span>
-                      <span className="font-mono text-slate-800 dark:text-slate-200">{time}</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={onLogout}
-                      className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer text-left"
-                    >
-                      <LogOut className="w-4 h-4 shrink-0" />
-                      <span>{t('nav.logout')}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Subtle Divider before Top-Right Corner Controls (Desktop & Tablet) */}
@@ -547,12 +454,27 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </nav>
 
-          {/* Quick Register / System Status Info on Right of Nav Bar */}
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <span className="inline-flex items-center gap-1.5 font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
-              <span>Express Register · Lane 1</span>
-            </span>
+          {/* User Profile & Logout on Right Side of Navigation Bar */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {currentUser && (
+              <div className="text-right leading-tight max-w-[140px] xl:max-w-[200px] truncate">
+                <span className="block text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {currentUser.name}
+                </span>
+                <span className="block text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
+                  {userRole === 'admin' ? t('auth.roleAdmin') : t('auth.roleCashier')}
+                </span>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={onLogout}
+              className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-700 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+              title={t('nav.logout')}
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{t('nav.logout')}</span>
+            </button>
           </div>
         </div>
       </div>
