@@ -16,6 +16,7 @@ import {
   X,
   AlertCircle,
   Eye,
+  Download,
 } from 'lucide-react';
 import {
   MembershipPlan,
@@ -247,16 +248,30 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
           </button>
         </div>
 
-        {activeTab === 'plans' && (
-          <button
-            type="button"
-            onClick={handleOpenCreatePlan}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-auto"
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <a
+            href="/AquaShine_Membership_User_Guide.pdf"
+            download="AquaShine_Membership_User_Guide.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            title="Download Membership Program User Guide PDF"
           >
-            <Plus className="w-4 h-4" />
-            <span>{t('admin.createPlanButton')}</span>
-          </button>
-        )}
+            <Download className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+            <span>User Guide (PDF)</span>
+          </a>
+
+          {activeTab === 'plans' && (
+            <button
+              type="button"
+              onClick={handleOpenCreatePlan}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t('admin.createPlanButton')}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* TAB 1: CUSTOMER MEMBERSHIPS DIRECTORY */}

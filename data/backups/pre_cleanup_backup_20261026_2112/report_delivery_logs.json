@@ -1,0 +1,20 @@
+[
+  {
+    "id": "test_1792528415966",
+    "reportDate": "2026-10-20",
+    "recipient": "admin@carwash.com",
+    "subject": "AquaShine POS – Daily Employee Service Report – 2026-10-20",
+    "status": "failed",
+    "attemptCount": 2,
+    "createdAt": "2026-10-20T20:33:35.966Z",
+    "lastAttemptAt": "2026-10-20T20:33:46.847Z",
+    "triggerType": "retry",
+    "summary": {
+      "totalCompletedWashes": 3,
+      "totalServiceSales": 98.50999999999999,
+      "activeAttendantsCount": 3,
+      "voidedCount": 0
+    },
+    "errorDetail": "Google Apps Script relay failed: Missing fields"
+  }
+]

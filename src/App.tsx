@@ -819,7 +819,15 @@ export default function App() {
     membershipDiscount?: number,
     promoCode?: string,
     promoDiscountPercent?: number,
-    promoDiscountAmount?: number
+    promoDiscountAmount?: number,
+    terminalDetails?: {
+      stripePaymentIntentId?: string;
+      stripeReaderId?: string;
+      cardBrand?: string;
+      cardLast4?: string;
+      cardEntryMethod?: 'contactless' | 'chip' | 'swipe' | 'manual';
+      terminalAuthCode?: string;
+    }
   ) => {
     if (!paymentMethod) return;
 
@@ -877,7 +885,14 @@ export default function App() {
 
       membershipId: activeCustomerMembership?.id,
       membershipPlanName: activeCustomerMembership?.planNameSnapshot,
-      isMembershipWash: isMembershipRedeemed,
+      isMembershipWash: Boolean(
+        isMembershipRedeemed &&
+        activeCustomerMembership &&
+        (selectedService.id === activeCustomerMembership.includedServiceId ||
+          (selectedService.name &&
+            activeCustomerMembership.includedServiceName &&
+            selectedService.name.trim().toLowerCase() === activeCustomerMembership.includedServiceName.trim().toLowerCase()))
+      ),
       membershipDiscount: membershipDiscount && membershipDiscount > 0 ? membershipDiscount : undefined,
 
       promoCode,
@@ -905,6 +920,12 @@ export default function App() {
       total,
       paymentMethod,
       cardRef,
+      stripePaymentIntentId: terminalDetails?.stripePaymentIntentId,
+      stripeReaderId: terminalDetails?.stripeReaderId,
+      cardBrand: terminalDetails?.cardBrand,
+      cardLast4: terminalDetails?.cardLast4,
+      cardEntryMethod: terminalDetails?.cardEntryMethod,
+      terminalAuthCode: terminalDetails?.terminalAuthCode,
       cashTendered,
       changeDue,
     };
@@ -926,8 +947,16 @@ export default function App() {
       );
     }
 
-    // If membership was redeemed and active customer membership exists, decrement wash & record usage
-    if (isMembershipRedeemed && activeCustomerMembership && selectedCustomer) {
+    // If membership was redeemed and active customer membership exists for the enrolled service, decrement wash & record usage
+    const isEnrolledService = Boolean(
+      activeCustomerMembership &&
+      (selectedService.id === activeCustomerMembership.includedServiceId ||
+        (selectedService.name &&
+          activeCustomerMembership.includedServiceName &&
+          selectedService.name.trim().toLowerCase() === activeCustomerMembership.includedServiceName.trim().toLowerCase()))
+    );
+
+    if (isMembershipRedeemed && activeCustomerMembership && selectedCustomer && isEnrolledService) {
       const updatedRemaining = Math.max(0, activeCustomerMembership.remainingWashes - 1);
       setMemberships((prev) =>
         prev.map((m) =>
@@ -1137,7 +1166,8 @@ export default function App() {
           membershipPlans={membershipPlans}
           businessInfo={settings.business}
           currentUser={currentUser}
-          onNavigateHome={() => setCurrentView('public_home')}
+          onNavigateHome={() => setCurrentView(currentUser?.role === 'customer' ? 'customer_dashboard' : 'public_home')}
+          onNavigateDashboard={() => setCurrentView('customer_dashboard')}
           onNavigateSignUp={() => setCurrentView('customer_signup')}
           onNavigateCustomerLogin={() => setCurrentView('customer_login')}
           onNavigateAdminLogin={() => setCurrentView('admin_login')}
@@ -1336,6 +1366,7 @@ export default function App() {
                   services={activeWashServices}
                   selectedServiceId={selectedService.id}
                   onSelectService={(service) => setSelectedServiceId(service.id)}
+                  includedMembershipServiceId={activeCustomerMembership?.includedServiceId}
                 />
               </div>
 

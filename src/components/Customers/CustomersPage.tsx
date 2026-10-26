@@ -84,6 +84,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
       const custVehicles = vehicles.filter((v) => v.customerId === c.id && v.active !== false);
       const custTxs = transactions.filter((t) => t.customerId === c.id);
       const validTxs = custTxs.filter((t) => t.status !== 'voided');
+      const washTxs = validTxs.filter((t) => t.transactionType !== 'membership_signup');
 
       const totalSpent = validTxs.reduce((sum, t) => sum + t.total, 0);
 
@@ -95,7 +96,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
 
       map.set(c.id, {
         vehiclesCount: custVehicles.length,
-        visitsCount: validTxs.length,
+        visitsCount: washTxs.length,
         lastVisit,
         totalSpent,
       });

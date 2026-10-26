@@ -4,6 +4,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import Stripe from 'stripe';
 
 dotenv.config();
 
@@ -1130,7 +1131,14 @@ function startReportScheduler() {
 // ============================================================================
 
 const app = express();
-const port = parseInt(process.env.PORT || '3000', 10);
+const argvPortIndex = process.argv.indexOf('--port');
+const cliPort = argvPortIndex !== -1 ? process.argv[argvPortIndex + 1] : undefined;
+const port = parseInt(
+  cliPort ||
+  process.env.DEFAULT_APP_PORT ||
+  (process.env.NGINX_PORT ? '3000' : (process.env.PORT || '3000')),
+  10
+);
 const isDev = process.env.NODE_ENV !== 'production';
 
 app.use(express.json({ limit: '10mb' }));
@@ -1277,6 +1285,707 @@ app.post('/api/reports/sync-pos', (req, res) => {
     res.status(400).json({ error: 'transactions and accounts arrays are required' });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to sync POS data' });
+  }
+});
+
+// ============================================================================
+// STRIPE TERMINAL IN-PERSON PAYMENT INTEGRATION
+// ============================================================================
+
+export interface ServerTerminalConfig {
+  locationId: string;
+  defaultReaderId?: string;
+  testMode: boolean;
+  stripeSecretKey?: string;
+  stripePublishableKey?: string;
+}
+
+const TERMINAL_CONFIG_FILE = path.join(DATA_DIR, 'terminal_config.json');
+
+const DEFAULT_TERMINAL_CONFIG: ServerTerminalConfig = {
+  locationId: process.env.STRIPE_TERMINAL_LOCATION_ID || 'loc_aquashine_main',
+  defaultReaderId: 'tmr_wisepos_e_01',
+  testMode: process.env.STRIPE_SECRET_KEY ? false : true,
+};
+
+function getTerminalConfig(): ServerTerminalConfig {
+  ensureDataDir();
+  try {
+    if (fs.existsSync(TERMINAL_CONFIG_FILE)) {
+      const data = fs.readFileSync(TERMINAL_CONFIG_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      return { ...DEFAULT_TERMINAL_CONFIG, ...parsed };
+    }
+  } catch (err) {
+    console.error('[TerminalStorage] Error reading terminal config:', err);
+  }
+  return DEFAULT_TERMINAL_CONFIG;
+}
+
+function saveTerminalConfig(cfg: Partial<ServerTerminalConfig>): ServerTerminalConfig {
+  ensureDataDir();
+  const current = getTerminalConfig();
+  const updated = { ...current, ...cfg };
+  try {
+    fs.writeFileSync(TERMINAL_CONFIG_FILE, JSON.stringify(updated, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('[TerminalStorage] Error saving terminal config:', err);
+  }
+  return updated;
+}
+
+function getStripeClient(): Stripe | null {
+  const cfg = getTerminalConfig();
+  const key = process.env.STRIPE_SECRET_KEY || cfg.stripeSecretKey;
+  if (!key) return null;
+  try {
+    return new Stripe(key);
+  } catch (e) {
+    console.error('[Stripe] Failed to initialize Stripe client:', e);
+    return null;
+  }
+}
+
+// In-Memory Simulated State for Test Mode & Development
+interface SimulatedReaderState {
+  id: string;
+  object: string;
+  device_type: string;
+  label: string;
+  serial_number: string;
+  status: 'online' | 'offline' | 'busy';
+  location: string;
+  livemode: boolean;
+  ip_address: string;
+  action: {
+    type: string;
+    status: 'in_progress' | 'succeeded' | 'failed';
+    process_payment_intent?: {
+      payment_intent: string;
+    };
+    failure_code?: string;
+    failure_message?: string;
+  } | null;
+}
+
+interface SimulatedPaymentIntentState {
+  id: string;
+  amount: number;
+  currency: string;
+  status: 'requires_payment_method' | 'requires_confirmation' | 'processing' | 'succeeded' | 'canceled';
+  client_secret: string;
+  created: number;
+  metadata: Record<string, string>;
+  charges?: {
+    data: Array<{
+      id: string;
+      amount: number;
+      paid: boolean;
+      status: string;
+      payment_method_details: {
+        card_present: {
+          brand: string;
+          last4: string;
+          exp_month: number;
+          exp_year: number;
+          funding: string;
+          read_method: 'contactless' | 'contact_emv' | 'magnetic_stripe_fallback';
+          receipt: {
+            authorization_code: string;
+            application_preferred_name?: string;
+          };
+        };
+      };
+    }>;
+  };
+}
+
+const simulatedReaders: Map<string, SimulatedReaderState> = new Map([
+  [
+    'tmr_wisepos_e_01',
+    {
+      id: 'tmr_wisepos_e_01',
+      object: 'terminal.reader',
+      device_type: 'bbpos_wisepos_e',
+      label: 'Front Counter (BBPOS WisePOS E)',
+      serial_number: 'WPOS-DEV-1001',
+      status: 'online',
+      location: 'loc_aquashine_main',
+      livemode: false,
+      ip_address: '192.168.1.101',
+      action: null,
+    },
+  ],
+  [
+    'tmr_stripe_s700_01',
+    {
+      id: 'tmr_stripe_s700_01',
+      object: 'terminal.reader',
+      device_type: 'stripe_s700',
+      label: 'Drive-Thru Lane (Stripe Reader S700)',
+      serial_number: 'S700-DEV-2002',
+      status: 'online',
+      location: 'loc_aquashine_main',
+      livemode: false,
+      ip_address: '192.168.1.102',
+      action: null,
+    },
+  ],
+]);
+
+const simulatedPaymentIntents: Map<string, SimulatedPaymentIntentState> = new Map();
+
+// --- 1. Terminal Config Endpoint ---
+app.get('/api/terminal/config', (req, res) => {
+  try {
+    const cfg = getTerminalConfig();
+    const hasEnvSecretKey = Boolean(process.env.STRIPE_SECRET_KEY);
+    const hasStoredSecretKey = Boolean(cfg.stripeSecretKey);
+    const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || cfg.stripePublishableKey || '';
+
+    res.json({
+      locationId: cfg.locationId,
+      defaultReaderId: cfg.defaultReaderId || 'tmr_wisepos_e_01',
+      testMode: cfg.testMode,
+      hasSecretKey: hasEnvSecretKey || hasStoredSecretKey,
+      publishableKey,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to get terminal config' });
+  }
+});
+
+app.post('/api/terminal/config', (req, res) => {
+  try {
+    const { locationId, defaultReaderId, testMode, stripeSecretKey, stripePublishableKey } = req.body;
+    const payload: Partial<ServerTerminalConfig> = {};
+    if (typeof locationId === 'string') payload.locationId = locationId.trim();
+    if (typeof defaultReaderId === 'string') payload.defaultReaderId = defaultReaderId.trim();
+    if (typeof testMode === 'boolean') payload.testMode = testMode;
+    if (typeof stripeSecretKey === 'string' && stripeSecretKey.trim().length > 0) {
+      payload.stripeSecretKey = stripeSecretKey.trim();
+    }
+    if (typeof stripePublishableKey === 'string') {
+      payload.stripePublishableKey = stripePublishableKey.trim();
+    }
+
+    const updated = saveTerminalConfig(payload);
+    res.json({
+      success: true,
+      config: {
+        locationId: updated.locationId,
+        defaultReaderId: updated.defaultReaderId,
+        testMode: updated.testMode,
+        hasSecretKey: Boolean(process.env.STRIPE_SECRET_KEY || updated.stripeSecretKey),
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || updated.stripePublishableKey || '',
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to update terminal config' });
+  }
+});
+
+// --- 2. List Readers Endpoint ---
+app.get('/api/terminal/readers', async (req, res) => {
+  try {
+    const cfg = getTerminalConfig();
+    const stripe = getStripeClient();
+
+    if (stripe && !cfg.testMode) {
+      try {
+        const stripeReaders = await stripe.terminal.readers.list({
+          location: cfg.locationId || undefined,
+          limit: 20,
+        });
+        if (stripeReaders && stripeReaders.data && stripeReaders.data.length > 0) {
+          return res.json({ readers: stripeReaders.data, isSimulated: false });
+        }
+      } catch (stripeErr: any) {
+        console.warn('[Terminal] Stripe readers list error, falling back to simulated:', stripeErr.message);
+      }
+    }
+
+    // In test mode or when no physical readers return, serve simulated readers
+    const list = Array.from(simulatedReaders.values());
+    res.json({ readers: list, isSimulated: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to list readers' });
+  }
+});
+
+// --- 3. Register Reader Endpoint ---
+app.post('/api/terminal/readers/register', async (req, res) => {
+  try {
+    const { registrationCode, label } = req.body;
+    if (!registrationCode || !label) {
+      return res.status(400).json({ error: 'registrationCode and label are required' });
+    }
+
+    const cfg = getTerminalConfig();
+    const stripe = getStripeClient();
+
+    if (stripe && !cfg.testMode && !registrationCode.startsWith('sim-')) {
+      try {
+        const reader = await stripe.terminal.readers.create({
+          registration_code: registrationCode.trim(),
+          label: label.trim(),
+          location: cfg.locationId || undefined,
+        });
+        return res.json({ success: true, reader, isSimulated: false });
+      } catch (stripeErr: any) {
+        return res.status(400).json({ error: stripeErr.message || 'Stripe reader registration failed' });
+      }
+    }
+
+    // Register simulated reader
+    const cleanId = `tmr_sim_${Date.now()}`;
+    const newSimReader: SimulatedReaderState = {
+      id: cleanId,
+      object: 'terminal.reader',
+      device_type: 'bbpos_wisepos_e',
+      label: label.trim(),
+      serial_number: `SIM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      status: 'online',
+      location: cfg.locationId,
+      livemode: false,
+      ip_address: '192.168.1.109',
+      action: null,
+    };
+    simulatedReaders.set(cleanId, newSimReader);
+    res.json({ success: true, reader: newSimReader, isSimulated: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to register reader' });
+  }
+});
+
+// --- 4. Create Payment Intent Endpoint (Server recalculates trusted amount) ---
+app.post('/api/terminal/create-payment-intent', async (req, res) => {
+  try {
+    const {
+      transactionRef,
+      service,
+      vehicleType,
+      addOns,
+      discountAmount,
+      taxRate,
+      customerName,
+      customerPhone,
+    } = req.body;
+
+    if (!service || typeof service.price !== 'number') {
+      return res.status(400).json({ error: 'Valid service with price is required' });
+    }
+
+    // Server-side calculation from trusted components
+    const servicePrice = Number(service.price) || 0;
+    const vehicleSurcharge = Number(vehicleType?.surcharge) || 0;
+    const addOnsTotal = Array.isArray(addOns)
+      ? addOns.reduce((sum: number, item: any) => sum + (Number(item?.price) || 0), 0)
+      : 0;
+
+    const rawSubtotal = servicePrice + vehicleSurcharge + addOnsTotal;
+    const discount = Math.max(0, Math.min(rawSubtotal, Number(discountAmount) || 0));
+    const subtotal = Math.max(0, rawSubtotal - discount);
+
+    const effectiveTaxRate = typeof taxRate === 'number' && !isNaN(taxRate) ? taxRate : 0.0825;
+    const taxAmount = Math.round(subtotal * effectiveTaxRate * 100) / 100;
+    const total = Math.round((subtotal + taxAmount) * 100) / 100;
+    const amountInCents = Math.round(total * 100);
+
+    if (amountInCents <= 0) {
+      return res.status(400).json({ error: 'Order total must be greater than zero for card processing' });
+    }
+
+    const cfg = getTerminalConfig();
+    const stripe = getStripeClient();
+    const internalRef = transactionRef || `TX-${Date.now()}`;
+
+    if (stripe && !cfg.testMode) {
+      try {
+        const piPayload: any = {
+          amount: amountInCents,
+          currency: 'usd',
+          capture_method: 'automatic',
+          metadata: {
+            transactionRef: internalRef,
+            serviceName: service.name || 'Wash Service',
+            customerName: customerName || 'Guest Customer',
+            customerPhone: customerPhone || '',
+          },
+          description: `AquaShine: ${service.name || 'Wash'} [${internalRef}]`,
+        };
+
+        let paymentIntent: any;
+        try {
+          // Stripe Terminal official migration: allowed_payment_method_types replaces deprecated payment_method_types
+          paymentIntent = await stripe.paymentIntents.create({
+            ...piPayload,
+            allowed_payment_method_types: ['card_present'],
+          } as any);
+        } catch (termErr: any) {
+          // Fallback if legacy Stripe version or account requires payment_method_types
+          const errText = String(termErr?.message || '');
+          if (
+            errText.includes('allowed_payment_method_types') ||
+            termErr?.param === 'allowed_payment_method_types' ||
+            termErr?.code === 'parameter_unknown'
+          ) {
+            paymentIntent = await stripe.paymentIntents.create({
+              ...piPayload,
+              payment_method_types: ['card_present'],
+            } as any);
+          } else {
+            throw termErr;
+          }
+        }
+
+        return res.json({
+          paymentIntentId: paymentIntent.id,
+          clientSecret: paymentIntent.client_secret,
+          amount: total,
+          amountInCents,
+          currency: 'usd',
+          status: paymentIntent.status,
+          transactionRef: internalRef,
+          isSimulated: false,
+        });
+      } catch (stripeErr: any) {
+        console.warn('[Terminal] Stripe paymentIntent create error, falling back to simulation:', stripeErr.message);
+      }
+    }
+
+    // Create Simulated PaymentIntent
+    const simPiId = `pi_sim_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const simPi: SimulatedPaymentIntentState = {
+      id: simPiId,
+      amount: amountInCents,
+      currency: 'usd',
+      status: 'requires_payment_method',
+      client_secret: `${simPiId}_secret_${Math.random().toString(36).substring(2, 9)}`,
+      created: Math.floor(Date.now() / 1000),
+      metadata: {
+        transactionRef: internalRef,
+        serviceName: service.name || 'Wash Service',
+        customerName: customerName || 'Guest Customer',
+        customerPhone: customerPhone || '',
+      },
+    };
+    simulatedPaymentIntents.set(simPiId, simPi);
+
+    res.json({
+      paymentIntentId: simPi.id,
+      clientSecret: simPi.client_secret,
+      amount: total,
+      amountInCents,
+      currency: 'usd',
+      status: simPi.status,
+      transactionRef: internalRef,
+      isSimulated: true,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to create payment intent' });
+  }
+});
+
+// --- 5. Process Payment Intent on Physical / Simulated Reader ---
+app.post('/api/terminal/process-payment-intent', async (req, res) => {
+  try {
+    const { readerId, paymentIntentId } = req.body;
+    if (!readerId || !paymentIntentId) {
+      return res.status(400).json({ error: 'readerId and paymentIntentId are required' });
+    }
+
+    const cfg = getTerminalConfig();
+    const stripe = getStripeClient();
+
+    if (stripe && !cfg.testMode && !readerId.startsWith('tmr_sim_') && !readerId.startsWith('tmr_wisepos_e_01') && !readerId.startsWith('tmr_stripe_s700_01')) {
+      try {
+        const reader = await stripe.terminal.readers.processPaymentIntent(readerId, {
+          payment_intent: paymentIntentId,
+        });
+        return res.json({
+          success: true,
+          readerId: reader.id,
+          action: reader.action,
+          isSimulated: false,
+        });
+      } catch (stripeErr: any) {
+        return res.status(400).json({ error: stripeErr.message || 'Failed to send payment to physical reader' });
+      }
+    }
+
+    // Process on simulated reader
+    const reader = simulatedReaders.get(readerId) || simulatedReaders.get('tmr_wisepos_e_01');
+    if (!reader) {
+      return res.status(404).json({ error: `Reader ${readerId} not found` });
+    }
+
+    reader.action = {
+      type: 'process_payment_intent',
+      status: 'in_progress',
+      process_payment_intent: {
+        payment_intent: paymentIntentId,
+      },
+    };
+
+    // Note: Do NOT set pi.status = 'processing' here.
+    // In Stripe Terminal, dispatching a PaymentIntent to a reader leaves the payment intent
+    // in 'requires_payment_method' until the customer actually taps, inserts, or swipes their card.
+
+    res.json({
+      success: true,
+      readerId: reader.id,
+      action: reader.action,
+      isSimulated: true,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to process payment on reader' });
+  }
+});
+
+// --- 6. Cancel Action on Reader ---
+app.post('/api/terminal/cancel-action', async (req, res) => {
+  try {
+    const { readerId } = req.body;
+    if (!readerId) {
+      return res.status(400).json({ error: 'readerId is required' });
+    }
+
+    const cfg = getTerminalConfig();
+    const stripe = getStripeClient();
+
+    if (stripe && !cfg.testMode && !readerId.startsWith('tmr_sim_') && !readerId.startsWith('tmr_wisepos_e_01') && !readerId.startsWith('tmr_stripe_s700_01')) {
+      try {
+        const reader = await stripe.terminal.readers.cancelAction(readerId);
+        return res.json({ success: true, reader, isSimulated: false });
+      } catch (stripeErr: any) {
+        return res.status(400).json({ error: stripeErr.message || 'Failed to cancel reader action' });
+      }
+    }
+
+    // Cancel on simulated reader
+    const reader = simulatedReaders.get(readerId);
+    if (reader) {
+      if (reader.action?.process_payment_intent?.payment_intent) {
+        const pi = simulatedPaymentIntents.get(reader.action.process_payment_intent.payment_intent);
+        if (pi && pi.status !== 'succeeded') {
+          pi.status = 'canceled';
+        }
+      }
+      reader.action = null;
+    }
+
+    res.json({ success: true, isSimulated: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to cancel reader action' });
+  }
+});
+
+// --- 7. Check Payment Intent Status & Retrieve Card-Present Details ---
+app.get('/api/terminal/payment-intent/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cfg = getTerminalConfig();
+    const stripe = getStripeClient();
+
+    if (stripe && !cfg.testMode && !id.startsWith('pi_sim_')) {
+      try {
+        const pi = await stripe.paymentIntents.retrieve(id, {
+          expand: ['charges.data', 'latest_charge'],
+        });
+
+        const charge = (pi as any).latest_charge?.payment_method_details
+          ? (pi as any).latest_charge
+          : (pi as any).charges?.data?.[0];
+        const cardPresent = charge?.payment_method_details?.card_present || charge?.payment_method_details?.interac_present;
+
+        return res.json({
+          id: pi.id,
+          status: pi.status,
+          amount: pi.amount / 100,
+          currency: pi.currency,
+          cardBrand: cardPresent?.brand || 'card',
+          cardLast4: cardPresent?.last4 || '••••',
+          cardEntryMethod: cardPresent?.read_method === 'contactless'
+            ? 'contactless'
+            : cardPresent?.read_method === 'magnetic_stripe_fallback'
+            ? 'swipe'
+            : 'chip',
+          terminalAuthCode: cardPresent?.receipt?.authorization_code || charge?.id || 'AUTH-OK',
+          maskedCard: cardPresent ? `${(cardPresent.brand || 'CARD').toUpperCase()} •••• ${cardPresent.last4 || '••••'}` : undefined,
+          isSimulated: false,
+        });
+      } catch (stripeErr: any) {
+        console.warn('[Terminal] Stripe paymentIntent retrieve error:', stripeErr.message);
+      }
+    }
+
+    // Simulated Payment Intent
+    const pi = simulatedPaymentIntents.get(id);
+    if (!pi) {
+      return res.status(404).json({ error: 'PaymentIntent not found' });
+    }
+
+    const charge = pi.charges?.data?.[0];
+    const cardPresent = charge?.payment_method_details?.card_present;
+
+    res.json({
+      id: pi.id,
+      status: pi.status,
+      amount: pi.amount / 100,
+      currency: pi.currency,
+      cardBrand: cardPresent?.brand || 'visa',
+      cardLast4: cardPresent?.last4 || '4242',
+      cardEntryMethod: cardPresent?.read_method === 'contactless'
+        ? 'contactless'
+        : cardPresent?.read_method === 'magnetic_stripe_fallback'
+        ? 'swipe'
+        : 'chip',
+      terminalAuthCode: cardPresent?.receipt?.authorization_code || 'AUTH-429812',
+      maskedCard: cardPresent ? `${cardPresent.brand.toUpperCase()} •••• ${cardPresent.last4}` : 'VISA •••• 4242',
+      isSimulated: true,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to retrieve payment intent' });
+  }
+});
+
+// --- 8. Simulate Card Presentation on Reader (Test Mode / Instant testing) ---
+app.post('/api/terminal/simulate-payment-action', async (req, res) => {
+  try {
+    const { readerId, paymentIntentId, outcome = 'approved_contactless' } = req.body;
+    if (!readerId || !paymentIntentId) {
+      return res.status(400).json({ error: 'readerId and paymentIntentId are required' });
+    }
+
+    const cfg = getTerminalConfig();
+    const stripe = getStripeClient();
+
+    // If real Stripe test mode reader is attached
+    if (stripe && !cfg.testMode && !readerId.startsWith('tmr_sim_') && !readerId.startsWith('tmr_wisepos_e_01') && !readerId.startsWith('tmr_stripe_s700_01')) {
+      try {
+        if (outcome === 'declined') {
+          // Stripe test helpers simulate decline
+          await stripe.testHelpers.terminal.readers.presentPaymentMethod(readerId, {
+            card_present: { number: '4000000000000002' }, // Test card for decline
+          });
+        } else {
+          await stripe.testHelpers.terminal.readers.presentPaymentMethod(readerId);
+        }
+        return res.json({ success: true, message: 'Simulation sent to Stripe test reader' });
+      } catch (stripeErr: any) {
+        console.warn('[Terminal] Stripe test helper simulation warning:', stripeErr.message);
+      }
+    }
+
+    // Handle local simulated reader & payment intent
+    let pi = simulatedPaymentIntents.get(paymentIntentId);
+    const reader = simulatedReaders.get(readerId) || simulatedReaders.get('tmr_wisepos_e_01');
+
+    if (!pi) {
+      pi = {
+        id: paymentIntentId,
+        amount: 1624,
+        currency: 'usd',
+        status: 'requires_payment_method',
+        client_secret: `${paymentIntentId}_secret`,
+        created: Math.floor(Date.now() / 1000),
+        metadata: {},
+      };
+      simulatedPaymentIntents.set(paymentIntentId, pi);
+    }
+
+    if (outcome === 'declined') {
+      pi.status = 'requires_payment_method';
+      if (reader) {
+        reader.action = {
+          type: 'process_payment_intent',
+          status: 'failed',
+          failure_code: 'card_declined',
+          failure_message: 'The card was declined: Insufficient funds.',
+        };
+      }
+      return res.json({
+        success: false,
+        status: 'declined',
+        error: 'The card was declined: Insufficient funds.',
+      });
+    }
+
+    // Outcome approved
+    const readMethod = outcome === 'approved_chip'
+      ? 'contact_emv'
+      : outcome === 'approved_swipe'
+      ? 'magnetic_stripe_fallback'
+      : 'contactless';
+
+    const authCode = `AUTH-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    pi.status = 'succeeded';
+    pi.charges = {
+      data: [
+        {
+          id: `ch_sim_${Date.now()}`,
+          amount: pi.amount,
+          paid: true,
+          status: 'succeeded',
+          payment_method_details: {
+            card_present: {
+              brand: 'visa',
+              last4: '4242',
+              exp_month: 12,
+              exp_year: 2028,
+              funding: 'credit',
+              read_method: readMethod,
+              receipt: {
+                authorization_code: authCode,
+                application_preferred_name: 'Visa Debit/Credit',
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    if (reader) {
+      reader.action = {
+        type: 'process_payment_intent',
+        status: 'succeeded',
+        process_payment_intent: {
+          payment_intent: paymentIntentId,
+        },
+      };
+    }
+
+    res.json({
+      success: true,
+      status: 'succeeded',
+      cardBrand: 'visa',
+      cardLast4: '4242',
+      cardEntryMethod: readMethod === 'contactless' ? 'contactless' : readMethod === 'magnetic_stripe_fallback' ? 'swipe' : 'chip',
+      terminalAuthCode: authCode,
+      maskedCard: 'VISA •••• 4242',
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Simulation error' });
+  }
+});
+
+// --- 9. Connection Token (For Stripe Terminal SDK if needed) ---
+app.post('/api/terminal/connection-token', async (req, res) => {
+  try {
+    const stripe = getStripeClient();
+    if (stripe) {
+      try {
+        const token = await stripe.terminal.connectionTokens.create();
+        return res.json({ secret: token.secret });
+      } catch (stripeErr: any) {
+        console.warn('[Terminal] ConnectionToken error, returning test token:', stripeErr.message);
+      }
+    }
+    res.json({ secret: 'simulated_connection_token_secret' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to create connection token' });
   }
 });
 

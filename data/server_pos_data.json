@@ -1,6 +1,33 @@
 {
   "transactions": [],
-  "accounts": [],
-  "businessInfo": {},
-  "lastSyncedAt": "2026-10-20T20:33:57.986Z"
+  "accounts": [
+    {
+      "id": "USR-ADMIN-1",
+      "employeeId": "EMP-1001",
+      "email": "admin@carwash.com",
+      "name": "Sarah Jenkins",
+      "role": "admin",
+      "active": true
+    },
+    {
+      "id": "USR-CASHIER-1",
+      "employeeId": "EMP-1002",
+      "email": "cashier@carwash.com",
+      "name": "Alex Rivera",
+      "role": "cashier",
+      "active": true
+    },
+    {
+      "id": "USR-CUS-1",
+      "customerId": "CUS-000001",
+      "email": "john.smith@example.com",
+      "name": "John Smith",
+      "role": "customer",
+      "active": true
+    }
+  ],
+  "businessInfo": {
+    "businessName": "AquaShine"
+  },
+  "lastSyncedAt": "2026-10-26T21:13:00.000Z"
 }

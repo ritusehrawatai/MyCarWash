@@ -65,6 +65,8 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
     switch (method) {
       case 'CASH':
         return <Banknote className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
+      case 'CARD_PRESENT':
+        return <CreditCard className="w-4 h-4 text-blue-600 dark:text-blue-400" />;
       case 'DEBIT_CARD':
         return <CreditCard className="w-4 h-4 text-sky-600 dark:text-sky-400" />;
       case 'CREDIT_CARD':
@@ -373,6 +375,17 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
                   </span>
                 )}
               </div>
+              {(transaction.cardEntryMethod || transaction.terminalAuthCode) && (
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono flex items-center gap-2 pt-0.5">
+                  {transaction.cardEntryMethod && (
+                    <span className="capitalize">{transaction.cardEntryMethod}</span>
+                  )}
+                  {transaction.cardEntryMethod && transaction.terminalAuthCode && <span>•</span>}
+                  {transaction.terminalAuthCode && (
+                    <span>Auth: {transaction.terminalAuthCode}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="text-right space-y-0.5">

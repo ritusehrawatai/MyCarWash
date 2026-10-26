@@ -22,6 +22,7 @@ import {
   ChevronUp,
   Users,
   Mail,
+  CreditCard,
 } from 'lucide-react';
 import {
   POSSettings,
@@ -40,6 +41,7 @@ import { VehicleModal } from './VehicleModal';
 import { MembershipManagementSection } from '../Admin/MembershipManagementSection';
 import { EmployeeManagementSection } from '../Admin/EmployeeManagementSection';
 import { DailyEmailReportsSection } from '../Admin/DailyEmailReportsSection';
+import { StripeTerminalSettings } from '../Terminal/StripeTerminalSettings';
 import { useLanguage } from '../../context/LanguageContext';
 import { testWelcomePromoEmail } from '../../services/promoService';
 
@@ -63,7 +65,7 @@ interface SettingsPageProps {
   currentUserId?: string;
 }
 
-type SettingsSubTab = 'all' | 'business' | 'services' | 'vehicles' | 'tax' | 'memberships' | 'employees' | 'daily_reports';
+type SettingsSubTab = 'all' | 'business' | 'services' | 'vehicles' | 'tax' | 'memberships' | 'employees' | 'daily_reports' | 'terminal';
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
   settings,
@@ -336,7 +338,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         </div>
 
         {/* Section Jump Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 w-full pt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2 w-full pt-1">
           <button
             type="button"
             onClick={() => setActiveSubTab('all')}
@@ -436,7 +438,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             }`}
           >
             <Mail className="w-3.5 h-3.5 shrink-0" />
-            <span>Daily Reports Email</span>
+            <span>Daily Report</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('terminal')}
+            className={`w-full py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-xs border ${
+              activeSubTab === 'terminal'
+                ? 'bg-blue-600 border-blue-600 text-white shadow-sm font-extrabold'
+                : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400'
+            }`}
+          >
+            <CreditCard className="w-3.5 h-3.5 shrink-0" />
+            <span>Card Reader</span>
           </button>
         </div>
       </div>
@@ -1285,6 +1299,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             accounts={accounts}
             currentUserId={currentUserId}
           />
+        </section>
+      )}
+
+      {/* 8. Stripe Terminal Physical Card Readers Section */}
+      {(activeSubTab === 'all' || activeSubTab === 'terminal') && (
+        <section className="pt-2">
+          <StripeTerminalSettings />
         </section>
       )}
 

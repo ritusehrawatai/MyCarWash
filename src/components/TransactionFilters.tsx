@@ -49,6 +49,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   const paymentOptions: { id: PaymentFilterOption; label: string }[] = [
     { id: 'ALL', label: t('common.all') },
     { id: 'CASH', label: t('payment.cash') },
+    { id: 'CARD_PRESENT', label: t('pos.payByCard') },
     { id: 'DEBIT_CARD', label: t('payment.debitCard') },
     { id: 'CREDIT_CARD', label: t('payment.creditCard') },
     { id: 'OTHER', label: t('common.other') },

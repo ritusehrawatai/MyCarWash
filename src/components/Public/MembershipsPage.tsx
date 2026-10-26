@@ -23,6 +23,7 @@ interface MembershipsPageProps {
   businessInfo: BusinessInfo;
   currentUser: AuthUser | null;
   onNavigateHome: () => void;
+  onNavigateDashboard?: () => void;
   onNavigateSignUp: () => void;
   onNavigateCustomerLogin: () => void;
   onNavigateAdminLogin: () => void;
@@ -34,6 +35,7 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
   businessInfo,
   currentUser,
   onNavigateHome,
+  onNavigateDashboard,
   onNavigateSignUp,
   onNavigateCustomerLogin,
   onNavigateAdminLogin,
@@ -67,11 +69,31 @@ export const MembershipsPage: React.FC<MembershipsPageProps> = ({
         businessInfo={businessInfo}
         activeNav="memberships"
         onNavigateHome={onNavigateHome}
+        onNavigateDashboard={onNavigateDashboard}
         onNavigateMemberships={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         onNavigateCustomerLogin={onNavigateCustomerLogin}
         onNavigateSignUp={onNavigateSignUp}
         currentUser={currentUser}
       />
+
+      {/* Contextual Back Navigation for Logged-In Customers */}
+      {currentUser?.role === 'customer' && (
+        <div className="bg-blue-50/90 dark:bg-blue-950/50 border-b border-blue-200 dark:border-blue-800/80 py-2.5 px-4 transition-colors">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 text-xs">
+            <button
+              type="button"
+              onClick={onNavigateDashboard || onNavigateHome}
+              className="inline-flex items-center gap-1.5 font-bold text-blue-700 hover:text-blue-900 dark:text-cyan-400 dark:hover:text-cyan-300 transition-colors cursor-pointer group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <span>{t('nav.backToDashboard')}</span>
+            </button>
+            <span className="text-slate-600 dark:text-slate-400 hidden sm:inline text-[11px]">
+              Logged in as <strong className="text-slate-900 dark:text-white font-bold">{currentUser.name}</strong>
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* 2. Hero Section */}
       <section className="pt-12 pb-16 sm:pt-16 sm:pb-20 bg-gradient-to-b from-blue-50/60 via-slate-50 to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 border-b border-slate-200/80 dark:border-slate-800/80 text-center px-4 transition-colors duration-200">

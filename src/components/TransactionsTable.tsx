@@ -38,6 +38,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
     switch (method) {
       case 'CASH':
         return <Banknote className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />;
+      case 'CARD_PRESENT':
+        return <CreditCard className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />;
       case 'DEBIT_CARD':
         return <CreditCard className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />;
       case 'CREDIT_CARD':

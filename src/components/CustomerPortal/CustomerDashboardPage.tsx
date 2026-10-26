@@ -26,6 +26,8 @@ import {
   HelpCircle,
   X,
   ExternalLink,
+  Menu,
+  Download,
 } from 'lucide-react';
 import {
   Customer,
@@ -86,6 +88,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
 }) => {
   const { t, formatDate, formatDateTime, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'membership' | 'vehicles' | 'history'>('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
@@ -148,6 +151,9 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
   const activeTxs = customerTransactions.filter((t) => t.status !== 'voided');
   const totalSpent = activeTxs.reduce((sum, t) => sum + t.total, 0);
 
+  // Completed wash visits (excluding membership enrollment / signups)
+  const washTransactions = activeTxs.filter((t) => t.transactionType !== 'membership_signup');
+
   const lastVisit = customerTransactions.length > 0
     ? [...customerTransactions].sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -156,76 +162,311 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white selection:bg-blue-600 selection:text-white flex flex-col transition-colors duration-200">
-      {/* Top Customer Portal Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onNavigateHome}
-            className="flex items-center gap-3 text-left cursor-pointer group"
-            title="AquaShine"
-            aria-label="AquaShine"
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md group-hover:scale-105 transition-transform shrink-0">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white block group-hover:text-blue-600 dark:group-hover:text-cyan-400 transition-colors">
-                  <span className="inline-flex items-center">
-                    <span>Aqua</span>
-                    <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent font-extrabold">Shine</span>
-                  </span>
-                </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-cyan-300">
-                  {t('dashboard.portalTitle')}
-                </span>
-              </div>
-              <span className="text-[10px] sm:text-[11px] text-blue-600 dark:text-cyan-400 font-semibold tracking-wider uppercase block leading-none mt-0.5">
-                The Ultimate Shine, Every Single Time
-              </span>
-            </div>
-          </button>
-
-          {/* Navigation, Language, Theme & Logout */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageToggle variant="segmented" />
-            <ThemeToggle variant="compact" />
-
-            <button
-              type="button"
-              onClick={onNavigateHome}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
-            >
-              <Home className="w-3.5 h-3.5" />
-              <span>{t('nav.home')}</span>
-            </button>
-
-            {onNavigateMemberships && (
+      {/* Top Customer Portal Header (Two-Tier Layout Matching Admin Layout) */}
+      <header className="no-print w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-xs transition-colors duration-200">
+        {/* ========================================================= */}
+        {/* LEVEL 1: TOP BAR (Branding, Status & Global Utilities)   */}
+        {/* ========================================================= */}
+        <div className="w-full">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
+            {/* LEFT: Brand Logo, Name & Tagline */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
               <button
                 type="button"
-                onClick={onNavigateMemberships}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-cyan-400 hover:text-blue-700 dark:hover:text-cyan-300 bg-blue-50 dark:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
+                onClick={onNavigateHome}
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-xs cursor-pointer hover:opacity-95 transition-opacity shrink-0"
+                title="AquaShine"
+                aria-label="AquaShine"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{t('nav.memberships')}</span>
+                <Sparkles className="w-5 h-5 text-white" />
               </button>
-            )}
 
-            <div className="hidden md:flex items-center gap-2 pl-3 border-l border-slate-200 dark:border-slate-800 text-xs">
-              <span className="font-bold text-slate-900 dark:text-white">{user.name}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={onNavigateHome}
+                    className="text-xs sm:text-base font-bold tracking-tight text-slate-900 dark:text-white leading-tight truncate text-left hover:text-blue-600 dark:hover:text-cyan-400 transition-colors cursor-pointer"
+                  >
+                    <span className="inline-flex items-center">
+                      <span>Aqua</span>
+                      <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent font-extrabold">Shine</span>
+                    </span>
+                  </button>
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-blue-600 dark:text-cyan-400 font-semibold tracking-wider uppercase block leading-none mt-1 truncate">
+                  The Ultimate Shine, Every Single Time
+                </p>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onLogout}
-              className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-700 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-800/60 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>{t('nav.logout')}</span>
-            </button>
+            {/* RIGHT: Status Badge, Divider, Language & Theme Toggles */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              {/* Membership / Status Badge (Matching Tax pill in Admin Header) */}
+              {membership && membership.status === 'active' ? (
+                <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-xl">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold">{t('dashboard.activeMember')}</span>
+                </div>
+              ) : (
+                <div className="hidden xl:flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl">
+                  <span className="text-slate-500 dark:text-slate-400">{t('common.status')}:</span>
+                  <span className="font-bold">{t('common.active')}</span>
+                </div>
+              )}
+
+              {/* Subtle Divider before Top-Right Corner Controls */}
+              <div className="hidden md:block h-6 w-px bg-slate-200 dark:bg-slate-700 mx-0.5 sm:mx-1" />
+
+              {/* EN | ES Language Toggle */}
+              <LanguageToggle variant="segmented" showGlobe={true} className="shrink-0" />
+
+              {/* Light / Dark Mode Toggle */}
+              <ThemeToggle variant="compact" className="shrink-0" />
+
+              {/* Mobile Hamburger Toggle Button (< 768px) */}
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+                aria-expanded={isMobileMenuOpen}
+                aria-label="Toggle navigation menu"
+                className="md:hidden p-1.5 sm:p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shrink-0"
+              >
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* ========================================================= */}
+        {/* LEVEL 2: MAIN NAVIGATION BAR (Tablet & Desktop >= 768px)  */}
+        {/* ========================================================= */}
+        <div className="hidden md:block w-full bg-slate-50/80 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-800/80 backdrop-blur-xs">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 h-11 sm:h-12 flex items-center justify-between gap-3">
+            {/* Left: Segmented Navigation Pills (Matching Admin Tabs Container) */}
+            <nav
+              aria-label="Customer Navigation"
+              className="flex items-center gap-1 p-0.5 bg-white dark:bg-slate-800/90 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs"
+            >
+              {/* Overview / Home */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('overview')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'overview'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Home className="w-4 h-4 shrink-0" />
+                <span>{t('dashboard.tabOverview')}</span>
+              </button>
+
+              {/* Memberships */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('membership')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'membership'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>{t('dashboard.tabMembership')}</span>
+                {membership && membership.status === 'active' && (
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      activeTab === 'membership' ? 'bg-white' : 'bg-emerald-500'
+                    } inline-block`}
+                  />
+                )}
+              </button>
+
+              {/* Vehicles */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('vehicles')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'vehicles'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Car className="w-4 h-4 shrink-0" />
+                <span>{t('dashboard.tabVehicles')}</span>
+                {customerVehicles.length > 0 && (
+                  <span
+                    className={`text-[11px] font-mono px-1.5 py-0.2 rounded font-extrabold ${
+                      activeTab === 'vehicles'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {customerVehicles.length}
+                  </span>
+                )}
+              </button>
+
+              {/* History */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('history')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'history'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Receipt className="w-4 h-4 shrink-0" />
+                <span>{t('dashboard.tabHistory')}</span>
+                {customerTransactions.length > 0 && (
+                  <span
+                    className={`text-[11px] font-mono px-1.5 py-0.2 rounded font-extrabold ${
+                      activeTab === 'history'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {customerTransactions.length}
+                  </span>
+                )}
+              </button>
+            </nav>
+
+            {/* Right: User Profile & Logout (Matching Admin Layout) */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <div className="text-right leading-tight max-w-[140px] xl:max-w-[200px] truncate">
+                <span className="block text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {user.name}
+                </span>
+                <span className="block text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
+                  {membership && membership.status === 'active' ? 'ACTIVE MEMBER' : 'CUSTOMER'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-700 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                title={t('nav.logout')}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{t('nav.logout')}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Drawer (< 768px) */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-4 space-y-4 shadow-xl animate-fade-in transition-colors">
+            {/* User Account Card */}
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                  {user.name ? user.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    {user.name}
+                  </p>
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {membership && membership.status === 'active' ? 'Active Member' : 'Customer'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="px-2.5 py-1 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-lg flex items-center gap-1"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>{t('nav.logout')}</span>
+              </button>
+            </div>
+
+            {/* Mobile Nav Links */}
+            <nav className="space-y-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('overview');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'overview'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Home className="w-4 h-4" />
+                <span>{t('dashboard.tabOverview')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('membership');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'membership'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <span>{t('dashboard.tabMembership')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('vehicles');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'vehicles'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <Car className="w-4 h-4" />
+                  <span>{t('dashboard.tabVehicles')}</span>
+                </span>
+                {customerVehicles.length > 0 && (
+                  <span className="text-[11px] font-mono px-1.5 py-0.2 rounded font-extrabold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                    {customerVehicles.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('history');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'history'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <Receipt className="w-4 h-4" />
+                  <span>{t('dashboard.tabHistory')}</span>
+                </span>
+                {customerTransactions.length > 0 && (
+                  <span className="text-[11px] font-mono px-1.5 py-0.2 rounded font-extrabold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                    {customerTransactions.length}
+                  </span>
+                )}
+              </button>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Main Dashboard Area */}
@@ -310,7 +551,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
               <span>{t('dashboard.totalWashes')}</span>
               <Receipt className="w-4 h-4 text-indigo-600 dark:text-blue-400" />
             </div>
-            <div className="text-3xl font-black text-slate-900 dark:text-white">{customerTransactions.length}</div>
+            <div className="text-3xl font-black text-slate-900 dark:text-white">{washTransactions.length}</div>
             <p className="text-xs text-slate-500 dark:text-slate-400">{t('dashboard.visitsToStationCount')}</p>
           </div>
 
@@ -327,9 +568,10 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
           </div>
         </div>
 
-        {/* Dashboard Tabs: My Profile, My Membership, My Vehicles, Wash History */}
+        {/* Dashboard Tabs Container */}
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 transition-colors">
+          {/* Mobile Tab Switcher (< 768px) */}
+          <div className="flex md:hidden flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 transition-colors">
             <button
               type="button"
               onClick={() => setActiveTab('overview')}
@@ -727,15 +969,28 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
 
                       {/* Action buttons */}
                       <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10">
-                        {onNavigateMemberships && (
-                          <button
-                            type="button"
-                            onClick={onNavigateMemberships}
-                            className="text-xs text-cyan-300 hover:text-cyan-200 font-bold underline cursor-pointer"
+                        <div className="flex items-center gap-3">
+                          {onNavigateMemberships && (
+                            <button
+                              type="button"
+                              onClick={onNavigateMemberships}
+                              className="text-xs text-cyan-300 hover:text-cyan-200 font-bold underline cursor-pointer"
+                            >
+                              {t('dashboard.browseOtherPlans')}
+                            </button>
+                          )}
+                          <a
+                            href="/AquaShine_Membership_User_Guide.pdf"
+                            download="AquaShine_Membership_User_Guide.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors"
+                            title="Download Member Guide PDF"
                           >
-                            {t('dashboard.browseOtherPlans')}
-                          </button>
-                        )}
+                            <Download className="w-3.5 h-3.5 text-cyan-300" />
+                            <span>Guide (PDF)</span>
+                          </a>
+                        </div>
 
                         {onCancelMembership && (
                           <div>

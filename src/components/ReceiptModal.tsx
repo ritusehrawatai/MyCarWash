@@ -144,6 +144,24 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   <span className="font-mono">{transaction.cardRef}</span>
                 </div>
               )}
+              {transaction.cardEntryMethod && (
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Entry Method:</span>
+                  <span className="capitalize font-medium">
+                    {transaction.cardEntryMethod === 'contactless'
+                      ? 'Contactless Tap'
+                      : transaction.cardEntryMethod === 'chip'
+                      ? 'EMV Chip'
+                      : transaction.cardEntryMethod}
+                  </span>
+                </div>
+              )}
+              {transaction.terminalAuthCode && (
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Terminal Auth:</span>
+                  <span className="font-mono text-xs">{transaction.terminalAuthCode}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>{t('common.status')}:</span>
                 <span className={`font-bold ${isVoided ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}>

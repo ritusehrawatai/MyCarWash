@@ -104,7 +104,7 @@ export type WashService = POSServiceItem;
 export type VehicleType = POSVehicleType;
 export type AddOn = POSServiceItem;
 
-export type PaymentMethod = 'CASH' | 'DEBIT_CARD' | 'CREDIT_CARD' | 'CARD' | 'MEMBERSHIP' | 'OTHER';
+export type PaymentMethod = 'CASH' | 'DEBIT_CARD' | 'CREDIT_CARD' | 'CARD' | 'CARD_PRESENT' | 'MEMBERSHIP' | 'OTHER';
 
 export type TransactionStatus = 'completed' | 'voided';
 
@@ -223,7 +223,14 @@ export interface Transaction {
   taxAmount: number;
   total: number;
   paymentMethod: PaymentMethod;
-  cardRef?: string; // Optional masked card ref provided by test-payment system (e.g. "**** 1234")
+  cardRef?: string; // Optional masked card ref (e.g. "**** 4242")
+  // Stripe Terminal In-Person Card References
+  stripePaymentIntentId?: string;
+  stripeReaderId?: string;
+  cardBrand?: string; // e.g. "visa", "mastercard", "amex"
+  cardLast4?: string; // e.g. "4242"
+  cardEntryMethod?: 'contactless' | 'chip' | 'swipe' | 'manual';
+  terminalAuthCode?: string;
   cashTendered?: number;
   changeDue?: number;
   voidedAt?: string;

@@ -125,6 +125,8 @@ export function formatPaymentMethodName(method: PaymentMethod | string): string 
   switch (method) {
     case 'CASH':
       return 'Cash';
+    case 'CARD_PRESENT':
+      return 'Pay by Card (Stripe Terminal)';
     case 'DEBIT_CARD':
       return 'Debit Card';
     case 'CREDIT_CARD':
@@ -147,6 +149,8 @@ export function formatLocalizedPaymentMethod(
   switch (method) {
     case 'CASH':
       return t('pos.cash');
+    case 'CARD_PRESENT':
+      return t('pos.payByCard');
     case 'DEBIT_CARD':
       return t('pos.debitCard');
     case 'CREDIT_CARD':

@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "recipientEmails": [
+    "admin@carwash.com",
+    "manager@carwash.com"
+  ],
+  "deliveryTime": "23:45",
+  "timezone": "America/New_York",
+  "includeZeroWashEmployees": false,
+  "maxDetailedRecordsInEmail": 50
+}

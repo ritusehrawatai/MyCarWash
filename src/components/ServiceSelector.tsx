@@ -8,12 +8,14 @@ interface ServiceSelectorProps {
   services: POSServiceItem[];
   selectedServiceId: string;
   onSelectService: (service: POSServiceItem) => void;
+  includedMembershipServiceId?: string;
 }
 
 export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
   services,
   selectedServiceId,
   onSelectService,
+  includedMembershipServiceId,
 }) => {
   const { t } = useLanguage();
 
@@ -78,7 +80,14 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
               }`}
             >
               {/* Badge if available */}
-              {service.badge && (
+              {includedMembershipServiceId && service.id === includedMembershipServiceId ? (
+                <span
+                  className="absolute top-2.5 right-2.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700 flex items-center gap-1 shadow-xs"
+                >
+                  <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
+                  <span>{t('pos.enrolledPlanWash')}</span>
+                </span>
+              ) : service.badge ? (
                 <span
                   className={`absolute top-2.5 right-2.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
                     isSelected
@@ -88,7 +97,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                 >
                   {service.badge}
                 </span>
-              )}
+              ) : null}
 
               {/* Service header */}
               <div className="pr-12">
