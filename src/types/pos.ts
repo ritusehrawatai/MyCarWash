@@ -74,6 +74,8 @@ export interface CustomerMembership {
   createdAt: string;
   updatedAt: string;
   cancelledAt?: string;
+  autoRenew?: boolean;
+  stripeSubscriptionId?: string;
 }
 
 export interface MembershipUsage {

@@ -144,9 +144,14 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
   const customerVehicles = vehicles.filter((v) => v.customerId === user.customerId);
 
   // Filter transactions belonging to this customer ONLY (Strict privacy constraint)
-  const customerTransactions = transactions.filter(
-    (t) => t.customerId && t.customerId === user.customerId
-  );
+  // In accordance with membership privacy, hide historical membership purchases from older cancelled/replaced plans
+  const customerTransactions = transactions.filter((t) => {
+    if (!t.customerId || t.customerId !== user.customerId) return false;
+    if (t.transactionType === 'membership_signup') {
+      return Boolean(membership && membership.status === 'active' && t.membershipId === membership.id);
+    }
+    return true;
+  });
 
   const activeTxs = customerTransactions.filter((t) => t.status !== 'voided');
   const totalSpent = activeTxs.reduce((sum, t) => sum + t.total, 0);
@@ -513,17 +518,21 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                   {membership.planNameSnapshot}
                 </div>
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                  <span>● {t('dashboard.activeStatus')}</span>
-                  <span className="text-slate-400 font-normal">· {t('dashboard.washesLeftCount', { remaining: membership.remainingWashes, total: membership.includedWashes })}</span>
+                  <span>● Active</span>
+                  <span className="text-slate-400 font-normal">
+                    · {membership.includedWashes === -1 || membership.includedWashes >= 999
+                      ? 'Unlimited washes left'
+                      : `${Math.max(0, membership.remainingWashes)} of ${membership.includedWashes} washes left`}
+                  </span>
                 </p>
               </>
             ) : (
               <>
-                <div className="text-lg font-black text-slate-700 dark:text-slate-300">
-                  {t('dashboard.noActivePlan')}
+                <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  You currently have no active membership.
                 </div>
                 <p className="text-xs text-blue-600 dark:text-cyan-400 font-semibold hover:underline">
-                  {t('dashboard.joinMembershipClub')}
+                  Browse Membership Plans
                 </p>
               </>
             )}
@@ -880,14 +889,14 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                         <div className="space-y-1">
                           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>{t('dashboard.activeMembershipTitle')}</span>
+                            <span>Active Membership</span>
                           </div>
                           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
                             {membership.planNameSnapshot}
                           </h2>
                           <p className="text-xs text-blue-200">
-                            {t('dashboard.memberId')}: <span className="font-mono font-bold text-white">{membership.id}</span> ·{' '}
-                            {membership.billingFrequency === 'monthly' ? t('dashboard.monthlyPass') : t('dashboard.yearlyPass')}
+                            Member ID: <span className="font-mono font-bold text-white">{membership.id}</span> ·{' '}
+                            {membership.billingFrequency === 'monthly' ? 'Monthly Pass' : 'Yearly Pass'}
                           </p>
                         </div>
 
@@ -895,8 +904,40 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                           <span className="text-2xl sm:text-3xl font-extrabold text-white font-mono">
                             {formatCurrency(membership.priceAtSignup)}
                           </span>
-                          <span className="text-xs text-blue-200 block">
+                          <span className="text-xs text-blue-200 block capitalize">
                             / {membership.billingFrequency}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Key Plan Dates & Information */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-1">
+                          <span className="text-[10px] text-blue-300 font-bold uppercase tracking-wider block">Status</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Active
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-1">
+                          <span className="text-[10px] text-blue-300 font-bold uppercase tracking-wider block">Start Date</span>
+                          <span className="font-mono font-bold text-white text-xs">
+                            {new Date(membership.startDate).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-1">
+                          <span className="text-[10px] text-blue-300 font-bold uppercase tracking-wider block">Expiry / Next Billing</span>
+                          <span className="font-mono font-bold text-cyan-300 text-xs">
+                            {new Date(membership.expirationDate || membership.nextBillingDate).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-1">
+                          <span className="text-[10px] text-blue-300 font-bold uppercase tracking-wider block">Service Covered</span>
+                          <span className="font-bold text-white text-xs truncate block">
+                            {membership.includedServiceName}
                           </span>
                         </div>
                       </div>
@@ -905,65 +946,36 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                       <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/15 space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold uppercase tracking-wider text-blue-200">
-                            {t('dashboard.includedWashAllocation')}
+                            Included Wash Allowance
                           </span>
                           <span className="text-sm font-black text-cyan-300 font-mono">
-                            {t('dashboard.washesLeftCount', { remaining: membership.remainingWashes, total: membership.includedWashes })}
+                            {membership.includedWashes === -1 || membership.includedWashes >= 999
+                              ? 'Unlimited Washes'
+                              : `${Math.max(0, membership.remainingWashes)} of ${membership.includedWashes} washes left`}
                           </span>
                         </div>
 
-                        <div className="w-full h-3.5 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/10">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full transition-all duration-500"
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                Math.max(0, (membership.remainingWashes / membership.includedWashes) * 100)
-                              )}%`,
-                            }}
-                          />
-                        </div>
+                        {membership.includedWashes > 0 && membership.includedWashes < 999 && (
+                          <div className="w-full h-3.5 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/10">
+                            <div
+                              className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.min(
+                                  100,
+                                  Math.max(0, (Math.max(0, membership.remainingWashes) / membership.includedWashes) * 100)
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                        )}
 
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-blue-200 pt-1">
                           <span>
-                            {t('dashboard.nextRenewal', { date: new Date(membership.nextBillingDate).toLocaleDateString() })}
+                            Next scheduled renewal: {new Date(membership.nextBillingDate).toLocaleDateString()}
                           </span>
                           <span>
-                            {t('dashboard.serviceCovered', { service: membership.includedServiceName })}
+                            Eligible Wash: <strong className="text-white">{membership.includedServiceName}</strong>
                           </span>
-                        </div>
-                      </div>
-
-                      {/* Benefits & Inclusions */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                        <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
-                          <div className="font-bold text-white flex items-center gap-1.5">
-                            <Sparkles className="w-4 h-4 text-cyan-400" />
-                            <span>{t('dashboard.includedWashesBenefit')}</span>
-                          </div>
-                          <p className="text-blue-200 text-[11px]">
-                            {membership.includedWashes} {membership.includedServiceName} {t('memberships.perMonth')}
-                          </p>
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
-                          <div className="font-bold text-white flex items-center gap-1.5">
-                            <TrendingUp className="w-4 h-4 text-emerald-400" />
-                            <span>{t('dashboard.addOnSavingsBenefit')}</span>
-                          </div>
-                          <p className="text-blue-200 text-[11px]">
-                            {t('dashboard.addOnSavingsDesc', { percent: membership.addOnDiscountPercent || 10 })}
-                          </p>
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
-                          <div className="font-bold text-white flex items-center gap-1.5">
-                            <ShieldCheck className="w-4 h-4 text-blue-400" />
-                            <span>{t('dashboard.expressLaneBenefit')}</span>
-                          </div>
-                          <p className="text-blue-200 text-[11px]">
-                            {t('dashboard.expressLaneDesc')}
-                          </p>
                         </div>
                       </div>
 
@@ -976,7 +988,7 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                               onClick={onNavigateMemberships}
                               className="text-xs text-cyan-300 hover:text-cyan-200 font-bold underline cursor-pointer"
                             >
-                              {t('dashboard.browseOtherPlans')}
+                              Browse other membership plans
                             </button>
                           )}
                           <a
@@ -1000,11 +1012,11 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                                 onClick={() => setShowCancelConfirm(true)}
                                 className="px-3.5 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
                               >
-                                {t('dashboard.cancelMembership')}
+                                Cancel Membership
                               </button>
                             ) : (
                               <div className="flex items-center gap-2 p-2 bg-rose-950/80 border border-rose-500/60 rounded-xl text-xs">
-                                <span className="text-rose-200">{t('dashboard.confirmCancelQuestion')}</span>
+                                <span className="text-rose-200">Are you sure you want to cancel?</span>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1013,14 +1025,14 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                                   }}
                                   className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg cursor-pointer"
                                 >
-                                  {t('dashboard.confirmCancelAction')}
+                                  Yes, Cancel
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setShowCancelConfirm(false)}
                                   className="px-2 py-1 bg-slate-800 text-slate-300 rounded-lg cursor-pointer"
                                 >
-                                  {t('dashboard.keepMyPlan')}
+                                  Keep Plan
                                 </button>
                               </div>
                             )}
@@ -1030,17 +1042,22 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Usage History for this Customer */}
+                  {/* Current Active Plan History Only */}
                   <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-xs">
-                    <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-cyan-500" />
-                      <span>{t('dashboard.membershipUsageHistory')}</span>
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-cyan-500" />
+                        <span>Current Plan Wash History</span>
+                      </h3>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {membership.planNameSnapshot}
+                      </span>
+                    </div>
 
-                    {membershipUsages.filter((u) => u.customerId === user.customerId || u.membershipId === membership.id).length > 0 ? (
+                    {membershipUsages.filter((u) => u.membershipId === membership.id).length > 0 ? (
                       <div className="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs">
                         {membershipUsages
-                          .filter((u) => u.customerId === user.customerId || u.membershipId === membership.id)
+                          .filter((u) => u.membershipId === membership.id)
                           .map((usage) => (
                             <div key={usage.id} className="py-3 flex items-center justify-between">
                               <div className="space-y-0.5">
@@ -1048,64 +1065,61 @@ export const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({
                                   {usage.serviceName}
                                 </div>
                                 <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-                                  {usage.vehicleDescription || t('pos.standardVehicle')} · {new Date(usage.date).toLocaleString()}
+                                  {usage.vehicleDescription || 'Standard Vehicle'} · {new Date(usage.date).toLocaleString()}
                                 </div>
                               </div>
                               <div className="text-right">
-                                <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold rounded-full font-mono text-[11px]">
-                                  {t('dashboard.freeCoveredByPass')}
+                                <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold rounded-full font-mono text-[11px] block">
+                                  Covered by Plan
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+                                  {Math.max(0, usage.remainingWashes)} washes left after visit
                                 </span>
                               </div>
                             </div>
                           ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 py-3 italic">
-                        {t('dashboard.noMembershipUsages')}
-                      </p>
+                      <div className="py-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                        <p className="font-semibold text-slate-700 dark:text-slate-300">
+                          No washes used yet under your current plan.
+                        </p>
+                        <p>
+                          {membership.includedWashes === -1 || membership.includedWashes >= 999
+                            ? 'You have unlimited washes available.'
+                            : `All ${membership.includedWashes} washes are available to redeem.`}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
               ) : (
-                /* No Active Membership: Upsell Promotion Card */
-                <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-3xl p-6 sm:p-10 shadow-xs space-y-6 text-center">
-                  <div className="w-16 h-16 rounded-3xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-cyan-400 flex items-center justify-center mx-auto shadow-inner">
-                    <Sparkles className="w-8 h-8" />
+                /* No Active Membership: Clean, simple card */
+                <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-3xl p-8 sm:p-12 text-center space-y-4 shadow-xs">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-cyan-400 flex items-center justify-center mx-auto shadow-inner">
+                    <Sparkles className="w-7 h-7" />
                   </div>
 
-                  <div className="max-w-md mx-auto space-y-2">
+                  <div className="max-w-md mx-auto space-y-1.5">
                     <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                      {t('dashboard.noActiveMembershipTitle')}
+                      You currently have no active membership.
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                      {t('dashboard.noActiveMembershipDesc')}
+                      Join an AquaShine membership plan to enjoy monthly wash allowances, express lane access, and add-on savings.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto text-left text-xs">
-                    <div className="p-3 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
-                      <div className="font-bold text-slate-900 dark:text-white">{t('dashboard.flexiblePlansTitle')}</div>
-                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">{t('dashboard.flexiblePlansDesc')}</p>
-                    </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
-                      <div className="font-bold text-slate-900 dark:text-white">{t('dashboard.memberDiscountsTitle')}</div>
-                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">{t('dashboard.memberDiscountsDesc')}</p>
-                    </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
-                      <div className="font-bold text-slate-900 dark:text-white">{t('dashboard.cancelAnytimeTitle')}</div>
-                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">{t('dashboard.cancelAnytimeDesc')}</p>
-                    </div>
-                  </div>
-
                   {onNavigateMemberships && (
-                    <button
-                      type="button"
-                      onClick={onNavigateMemberships}
-                      className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black text-sm rounded-2xl shadow-lg shadow-blue-500/25 transition-all cursor-pointer inline-flex items-center gap-2"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span>{t('dashboard.viewAvailablePlansButton')}</span>
-                    </button>
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={onNavigateMemberships}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black text-sm rounded-2xl shadow-lg shadow-blue-500/25 transition-all cursor-pointer inline-flex items-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Browse Membership Plans</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

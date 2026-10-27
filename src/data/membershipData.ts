@@ -1,4 +1,4 @@
-import { MembershipPlan, CustomerMembership, MembershipUsage, BillingFrequency } from '../types/pos';
+import { MembershipPlan, CustomerMembership, MembershipUsage, BillingFrequency, MembershipStatus } from '../types/pos';
 
 export const STORAGE_MEMBERSHIPS_KEY = 'my_car_wash_memberships';
 export const STORAGE_MEMBERSHIP_PLANS_KEY = 'my_car_wash_membership_plans';
@@ -159,4 +159,29 @@ export function formatMembershipStatusBadge(status: string): { label: string; bg
         textClass: 'text-slate-800 dark:text-slate-300',
       };
   }
+}
+
+/**
+ * Checks if a membership is genuinely active (status is active and not expired by date)
+ */
+export function isMembershipActive(membership: CustomerMembership | null | undefined): boolean {
+  if (!membership) return false;
+  if (membership.status !== 'active') return false;
+  if (membership.expirationDate && new Date(membership.expirationDate).getTime() <= Date.now()) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Derives the effective membership status considering both explicit status and date validity
+ */
+export function getEffectiveMembershipStatus(membership: CustomerMembership): MembershipStatus {
+  if (membership.status === 'cancelled') return 'cancelled';
+  if (membership.status === 'expired') return 'expired';
+  if (membership.status === 'pending') return 'pending';
+  if (membership.expirationDate && new Date(membership.expirationDate).getTime() <= Date.now()) {
+    return 'expired';
+  }
+  return 'active';
 }

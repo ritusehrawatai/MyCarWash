@@ -44,6 +44,7 @@ import {
   MembershipUsage,
   WelcomePromoCode,
   EmployeeRole,
+  MembershipStatus,
 } from './types/pos';
 import {
   DEFAULT_SETTINGS,
@@ -1037,8 +1038,46 @@ export default function App() {
     newMembership: CustomerMembership,
     newTx: Transaction
   ) => {
-    setMemberships((prev) => [newMembership, ...prev]);
-    setTransactions((prev) => [newTx, ...prev]);
+    const now = new Date().toISOString();
+
+    setMemberships((prev) => {
+      // 1. Immediately mark all previous active memberships for this customer as Cancelled and disable autoRenew
+      const updatedExisting = prev.map((m) => {
+        if (
+          m.customerId === newMembership.customerId &&
+          m.id !== newMembership.id &&
+          m.status === 'active'
+        ) {
+          return {
+            ...m,
+            status: 'cancelled' as MembershipStatus,
+            autoRenew: false,
+            cancelledAt: now,
+            updatedAt: now,
+          };
+        }
+        return m;
+      });
+
+      // 2. Prevent duplicate entries if callback is retried
+      const existingIndex = updatedExisting.findIndex((m) => m.id === newMembership.id);
+      if (existingIndex >= 0) {
+        const next = [...updatedExisting];
+        next[existingIndex] = { ...newMembership, status: 'active' as MembershipStatus };
+        return next;
+      }
+
+      // 3. Customer has ONLY ONE active membership after replacement
+      return [newMembership, ...updatedExisting];
+    });
+
+    setTransactions((prev) => {
+      if (prev.some((t) => t.id === newTx.id || t.receiptNumber === newTx.receiptNumber)) {
+        return prev;
+      }
+      return [newTx, ...prev];
+    });
+
     setIsMembershipCheckoutOpen(false);
     setSelectedPlanForCheckout(null);
 
@@ -1049,14 +1088,16 @@ export default function App() {
   };
 
   const handleCancelMembership = (membershipId: string) => {
+    const now = new Date().toISOString();
     setMemberships((prev) =>
       prev.map((m) =>
         m.id === membershipId
           ? {
               ...m,
-              status: 'cancelled',
-              cancelledAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              status: 'cancelled' as MembershipStatus,
+              autoRenew: false,
+              cancelledAt: now,
+              updatedAt: now,
             }
           : m
       )
@@ -1083,6 +1124,28 @@ export default function App() {
     if (currentUser?.role !== 'admin') {
       alert('Only an Administrator can void transactions.');
       return;
+    }
+
+    const targetTx = transactions.find((t) => t.id === transactionId);
+    if (!targetTx || targetTx.status === 'voided') return;
+
+    // If transaction was a redeemed membership wash, restore the wash allowance
+    if (targetTx.isMembershipWash && targetTx.membershipId) {
+      setMemberships((prev) =>
+        prev.map((m) => {
+          if (m.id === targetTx.membershipId) {
+            const restored = Math.min(m.includedWashes, (m.remainingWashes || 0) + 1);
+            return {
+              ...m,
+              remainingWashes: restored,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return m;
+        })
+      );
+      // Remove corresponding membership usage
+      setMembershipUsages((prev) => prev.filter((u) => u.transactionId !== targetTx.id));
     }
 
     setTransactions((prev) =>
@@ -1115,17 +1178,26 @@ export default function App() {
     );
   }, [currentUser, customers]);
 
-  // Find active or latest membership for logged-in customer
+  // Find ONLY current active membership for logged-in customer (never return cancelled or expired plans)
   const loggedInCustomerMembership = useMemo(() => {
     if (!currentUser) return null;
     const custId = currentUser.customerId;
     if (!custId) return null;
     return (
-      memberships.find((m) => m.customerId === custId && m.status === 'active') ||
-      memberships.find((m) => m.customerId === custId) ||
-      null
+      memberships.find(
+        (m) =>
+          m.customerId === custId &&
+          m.status === 'active' &&
+          (!m.expirationDate || new Date(m.expirationDate).getTime() > Date.now())
+      ) || null
     );
   }, [currentUser, memberships]);
+
+  // Filter membership usages strictly to current active plan
+  const loggedInCustomerActiveUsages = useMemo(() => {
+    if (!loggedInCustomerMembership) return [];
+    return membershipUsages.filter((u) => u.membershipId === loggedInCustomerMembership.id);
+  }, [loggedInCustomerMembership, membershipUsages]);
 
   // ================= VIEW ROUTING =================
 
@@ -1245,7 +1317,7 @@ export default function App() {
           vehicles={vehicles}
           transactions={transactions}
           membership={loggedInCustomerMembership}
-          membershipUsages={membershipUsages}
+          membershipUsages={loggedInCustomerActiveUsages}
           promoCode={promoCodes.find((p) => p.customerId === currentUser.customerId) || null}
           onOpenAddVehicle={() => {
             setEditingVehicleForCustomer(null);

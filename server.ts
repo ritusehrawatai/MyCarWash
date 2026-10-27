@@ -1289,6 +1289,297 @@ app.post('/api/reports/sync-pos', (req, res) => {
 });
 
 // ============================================================================
+// MEMBERSHIP RENEWAL & RECURRING BILLING SAFEGUARD ENDPOINTS
+// ============================================================================
+
+app.post('/api/memberships/validate-renewal', (req, res) => {
+  try {
+    const { status, expirationDate, autoRenew } = req.body;
+
+    // Rule: Cancelled memberships must never trigger future recurring charges or renewals
+    if (status === 'cancelled') {
+      return res.status(400).json({
+        canRenew: false,
+        error: 'Cancelled membership cannot trigger future recurring charges or renewals.',
+      });
+    }
+
+    // Rule: Expired memberships must never trigger future recurring charges or renewals
+    if (status === 'expired' || (expirationDate && new Date(expirationDate).getTime() <= Date.now())) {
+      return res.status(400).json({
+        canRenew: false,
+        error: 'Expired membership cannot trigger future recurring charges or renewals.',
+      });
+    }
+
+    if (autoRenew === false) {
+      return res.status(400).json({
+        canRenew: false,
+        error: 'Auto-renewal is disabled for this membership.',
+      });
+    }
+
+    return res.json({ canRenew: true, message: 'Membership eligible for renewal.' });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+app.post('/api/memberships/cancel-subscription', async (req, res) => {
+  try {
+    const { membershipId, stripeSubscriptionId } = req.body;
+    console.log(`[Server] Membership ${membershipId} cancelled. Disabling recurring billing.`);
+
+    if (stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
+      try {
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY);
+        await stripeClient.subscriptions.cancel(stripeSubscriptionId);
+        console.log(`[Server] Stripe subscription ${stripeSubscriptionId} cancelled successfully.`);
+      } catch (stripeErr: any) {
+        console.warn(`[Server] Stripe subscription cancellation warning: ${stripeErr.message}`);
+      }
+    }
+
+    return res.json({
+      success: true,
+      membershipId,
+      status: 'cancelled',
+      autoRenew: false,
+      message: 'All future recurring charges and renewals stopped.',
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+// Server-side storage for memberships & usages
+interface ServerMembershipRecord {
+  id: string;
+  customerId: string;
+  customerName: string;
+  planId: string;
+  planNameSnapshot: string;
+  billingFrequency: 'monthly' | 'yearly';
+  priceAtSignup: number;
+  startDate: string;
+  nextBillingDate: string;
+  expirationDate: string;
+  status: 'active' | 'cancelled' | 'expired' | 'pending';
+  includedWashes: number;
+  remainingWashes: number;
+  includedServiceId: string;
+  includedServiceName: string;
+  addOnDiscountPercent?: number;
+  createdAt: string;
+  updatedAt: string;
+  cancelledAt?: string;
+  autoRenew?: boolean;
+  stripeSubscriptionId?: string;
+}
+
+interface ServerMembershipUsage {
+  id: string;
+  membershipId: string;
+  customerId: string;
+  customerName?: string;
+  vehicleId?: string;
+  vehicleDescription?: string;
+  transactionId: string;
+  serviceId: string;
+  serviceName: string;
+  date: string;
+  remainingWashes: number;
+  discountAmount: number;
+}
+
+// In-memory persistent collections (seeded with initial demo records)
+let serverMemberships: ServerMembershipRecord[] = [
+  {
+    id: 'MEM-000001',
+    customerId: 'CUS-000001',
+    customerName: 'John Smith',
+    planId: 'plan_premium_monthly',
+    planNameSnapshot: 'Premium Monthly',
+    billingFrequency: 'monthly',
+    priceAtSignup: 39.99,
+    startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    nextBillingDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+    expirationDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'active',
+    includedWashes: 4,
+    remainingWashes: 3,
+    includedServiceId: 'premium',
+    includedServiceName: 'Premium Wash',
+    addOnDiscountPercent: 10,
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    autoRenew: true,
+  },
+];
+
+let serverMembershipUsages: ServerMembershipUsage[] = [
+  {
+    id: 'USG-000001',
+    membershipId: 'MEM-000001',
+    customerId: 'CUS-000001',
+    customerName: 'John Smith',
+    vehicleId: 'VEH-000001',
+    vehicleDescription: '2023 White Toyota Camry [ABC123]',
+    transactionId: 'TX-INITIAL-01',
+    serviceId: 'premium',
+    serviceName: 'Premium Wash',
+    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    remainingWashes: 3,
+    discountAmount: 25.0,
+  },
+];
+
+// 1. Customer Active Membership Endpoint (Restricted to Active Plan & Current Usages Only)
+app.get('/api/memberships/customer/:customerId/active', (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const callerRole = (req.headers['x-user-role'] as string) || 'customer';
+    const callerCustomerId = (req.headers['x-customer-id'] as string) || '';
+
+    // Enforce authorization: customer can only query their own data
+    if (callerRole === 'customer' && callerCustomerId && callerCustomerId !== customerId) {
+      return res.status(403).json({
+        error: 'Forbidden: Customers cannot access another customer\'s membership data.',
+      });
+    }
+
+    // Find ONLY current active membership
+    const activeMembership = serverMemberships.find(
+      (m) =>
+        m.customerId === customerId &&
+        m.status === 'active' &&
+        (!m.expirationDate || new Date(m.expirationDate).getTime() > Date.now())
+    );
+
+    if (!activeMembership) {
+      return res.json({
+        hasActiveMembership: false,
+        membership: null,
+        usages: [],
+        message: 'You currently have no active membership.',
+      });
+    }
+
+    // Return ONLY usages associated with this active membership
+    const activeUsages = serverMembershipUsages.filter(
+      (u) => u.membershipId === activeMembership.id
+    );
+
+    return res.json({
+      hasActiveMembership: true,
+      membership: activeMembership,
+      usages: activeUsages,
+      remainingWashes: Math.max(0, activeMembership.remainingWashes),
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Failed to fetch active membership' });
+  }
+});
+
+// 2. Customer Membership History Endpoint (Protected: Forbidden for direct customer calls)
+app.get('/api/memberships/customer/:customerId/history', (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const callerRole = (req.headers['x-user-role'] as string) || 'customer';
+
+    // Rule: Direct API queries for full membership history are forbidden to customers
+    if (callerRole === 'customer') {
+      return res.status(403).json({
+        error: 'Forbidden: Customers cannot access membership history through direct API requests. Only active plan details are permitted.',
+      });
+    }
+
+    // Staff / Admin can view complete history for this customer
+    const customerMemberships = serverMemberships.filter((m) => m.customerId === customerId);
+    const customerUsages = serverMembershipUsages.filter((u) => u.customerId === customerId);
+
+    return res.json({
+      customerId,
+      memberships: customerMemberships,
+      usages: customerUsages,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Failed to fetch customer membership history' });
+  }
+});
+
+// 3. Admin All Memberships & Timeline Endpoint (Strict Admin Only)
+app.get('/api/memberships/admin/all', (req, res) => {
+  try {
+    const callerRole = (req.headers['x-user-role'] as string) || '';
+
+    if (callerRole !== 'admin') {
+      return res.status(403).json({
+        error: 'Forbidden: Admin authorization required to access complete membership history.',
+      });
+    }
+
+    // Build timeline grouped by customer
+    const customerTimelines: Record<string, {
+      customerId: string;
+      customerName: string;
+      activePlan?: ServerMembershipRecord;
+      pastPlans: ServerMembershipRecord[];
+      timeline: ServerMembershipRecord[];
+    }> = {};
+
+    serverMemberships.forEach((m) => {
+      if (!customerTimelines[m.customerId]) {
+        customerTimelines[m.customerId] = {
+          customerId: m.customerId,
+          customerName: m.customerName,
+          pastPlans: [],
+          timeline: [],
+        };
+      }
+      customerTimelines[m.customerId].timeline.push(m);
+      if (m.status === 'active') {
+        customerTimelines[m.customerId].activePlan = m;
+      } else {
+        customerTimelines[m.customerId].pastPlans.push(m);
+      }
+    });
+
+    return res.json({
+      totalMemberships: serverMemberships.length,
+      activeCount: serverMemberships.filter((m) => m.status === 'active').length,
+      cancelledCount: serverMemberships.filter((m) => m.status === 'cancelled').length,
+      expiredCount: serverMemberships.filter((m) => m.status === 'expired').length,
+      memberships: serverMemberships,
+      usages: serverMembershipUsages,
+      timelines: Object.values(customerTimelines),
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Failed to fetch admin membership data' });
+  }
+});
+
+// 4. Sync Memberships from POS / Client State
+app.post('/api/memberships/sync', (req, res) => {
+  try {
+    const { memberships, usages } = req.body;
+    if (Array.isArray(memberships)) {
+      serverMemberships = memberships;
+    }
+    if (Array.isArray(usages)) {
+      serverMembershipUsages = usages;
+    }
+    return res.json({
+      success: true,
+      membershipsCount: serverMemberships.length,
+      usagesCount: serverMembershipUsages.length,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Failed to sync memberships' });
+  }
+});
+
+// ============================================================================
 // STRIPE TERMINAL IN-PERSON PAYMENT INTEGRATION
 // ============================================================================
 

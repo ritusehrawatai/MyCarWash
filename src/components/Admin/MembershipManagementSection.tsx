@@ -49,9 +49,10 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
   onCancelMembership,
 }) => {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'overview' | 'plans' | 'usages'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'timelines' | 'plans' | 'usages'>('overview');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'monthly' | 'yearly' | 'cancelled' | 'expired'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTimelineCustId, setSelectedTimelineCustId] = useState<string | null>(null);
 
   // Plan Edit / Create Modal state
   const [editingPlan, setEditingPlan] = useState<MembershipPlan | null>(null);
@@ -212,7 +213,7 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
 
       {/* 2. Navigation Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
@@ -223,6 +224,17 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
             }`}
           >
             {t('admin.tabMemberships')} ({memberships.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('timelines')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'timelines'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            Customer Timelines ({Array.from(new Set(memberships.map((m) => m.customerId))).length})
           </button>
           <button
             type="button"
@@ -392,7 +404,18 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
                               {badge.label}
                             </span>
                           </td>
-                          <td className="py-3.5 px-3 text-right">
+                          <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedTimelineCustId(m.customerId);
+                                setActiveTab('timelines');
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-bold text-blue-700 dark:text-cyan-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer mr-1.5"
+                              title="View Complete Customer Membership Timeline"
+                            >
+                              Timeline
+                            </button>
                             {m.status === 'active' && (
                               <button
                                 type="button"
@@ -411,6 +434,177 @@ export const MembershipManagementSection: React.FC<MembershipManagementSectionPr
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB: CUSTOMER TIMELINES (ADMIN CAN VIEW COMPLETE OLD AND NEW MEMBERSHIP HISTORY) */}
+      {activeTab === 'timelines' && (
+        <div className="space-y-6">
+          {/* Header & Filter */}
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+                <span>Customer Membership Timelines & Replacement Audit</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Review complete old and new memberships, renewals, upgrades, and cancellations separately.
+              </p>
+            </div>
+
+            {selectedTimelineCustId && (
+              <button
+                type="button"
+                onClick={() => setSelectedTimelineCustId(null)}
+                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Show All Customers
+              </button>
+            )}
+          </div>
+
+          {/* Timeline Cards grouped by customer */}
+          {Array.from(new Set(memberships.map((m) => m.customerId)))
+            .filter((custId) => !selectedTimelineCustId || custId === selectedTimelineCustId)
+            .map((custId) => {
+              const custMemberships = memberships
+                .filter((m) => m.customerId === custId)
+                .sort((a, b) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime());
+              const customerName = custMemberships[0]?.customerName || custId;
+              const activePlan = custMemberships.find((m) => m.status === 'active');
+              const pastPlans = custMemberships.filter((m) => m.status !== 'active');
+
+              return (
+                <div
+                  key={custId}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-5 shadow-xs"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div>
+                      <h4 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>{customerName}</span>
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {custId}
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Total membership records: {custMemberships.length} ({pastPlans.length} past, {activePlan ? '1 active' : '0 active'})
+                      </p>
+                    </div>
+
+                    <div>
+                      {activePlan ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          Current: {activePlan.planNameSnapshot}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                          No Active Plan
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chronological List of Membership Plans */}
+                  <div className="space-y-4">
+                    {custMemberships.map((m, index) => {
+                      const badge = formatMembershipStatusBadge(m.status);
+                      const planUsages = usages.filter((u) => u.membershipId === m.id);
+                      const washesUsed = Math.max(0, m.includedWashes - m.remainingWashes);
+
+                      return (
+                        <div
+                          key={m.id}
+                          className={`p-4 rounded-xl border transition-all ${
+                            m.status === 'active'
+                              ? 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/80'
+                              : 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono font-bold text-xs text-blue-600 dark:text-cyan-400">
+                                  {m.id}
+                                </span>
+                                <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                                  {m.planNameSnapshot}
+                                </span>
+                                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-black ${badge.bgClass} ${badge.textClass}`}>
+                                  {badge.label}
+                                </span>
+                                {index === 0 && m.status === 'active' && (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-cyan-300 rounded">
+                                    Latest Active
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="text-xs text-slate-600 dark:text-slate-300 flex flex-wrap gap-x-4 gap-y-1 pt-1">
+                                <span>
+                                  <strong>Price:</strong> {formatCurrency(m.priceAtSignup)} / {m.billingFrequency}
+                                </span>
+                                <span>
+                                  <strong>Start:</strong> {new Date(m.startDate).toLocaleDateString()}
+                                </span>
+                                <span>
+                                  <strong>Expiry:</strong> {new Date(m.expirationDate || m.nextBillingDate).toLocaleDateString()}
+                                </span>
+                                <span>
+                                  <strong>Wash Allowance:</strong> {m.includedWashes} {m.includedServiceName}s
+                                </span>
+                                <span>
+                                  <strong>Usage:</strong> {washesUsed} used, {Math.max(0, m.remainingWashes)} remaining
+                                </span>
+                              </div>
+
+                              {m.status === 'cancelled' && (
+                                <p className="text-xs text-amber-700 dark:text-amber-400 font-medium pt-1">
+                                  ● Cancelled on {new Date(m.cancelledAt || m.updatedAt).toLocaleString()}. Recurring charges and renewals stopped.
+                                </p>
+                              )}
+                              {m.status === 'expired' && (
+                                <p className="text-xs text-rose-700 dark:text-rose-400 font-medium pt-1">
+                                  ● Expired on {new Date(m.expirationDate || m.nextBillingDate).toLocaleString()}.
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
+                                {m.remainingWashes} of {m.includedWashes} washes left
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Usages recorded under this membership */}
+                          {planUsages.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60">
+                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                                Washes Completed Under This Plan ({planUsages.length}):
+                              </span>
+                              <div className="space-y-1">
+                                {planUsages.map((u) => (
+                                  <div key={u.id} className="text-xs flex items-center justify-between text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg">
+                                    <span>
+                                      {u.serviceName} ({u.vehicleDescription || 'Standard Vehicle'}) · {new Date(u.date).toLocaleString()}
+                                    </span>
+                                    <span className="font-mono text-[11px] text-slate-500">
+                                      {u.remainingWashes} left after wash
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
         </div>
       )}
 
